@@ -54,4 +54,9 @@ class HomeController extends BaseController
     {
         return $this->html();
     }
+
+    public function knihy(): Response
+    {
+        return $this->html();
+    }
 }

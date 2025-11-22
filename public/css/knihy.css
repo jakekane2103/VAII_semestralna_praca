@@ -1,0 +1,14 @@
+.navbar {
+    border-bottom: 1px solid grey;
+}
+
+.navbar-brand img {
+    width: 50px;
+}
+
+/* Uniform book cover sizing */
+.book-cover {
+    height: 240px; /* adjust this value if you want taller/shorter covers */
+    object-fit: cover; /* keeps the image cropped to fill the area */
+    display: block;
+}

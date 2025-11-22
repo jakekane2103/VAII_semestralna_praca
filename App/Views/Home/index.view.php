@@ -24,7 +24,7 @@
             </div>
         </div>
     </div>
-    <div class="row mt-3">
+    <div class="row mt-3">y
         <div class="col text-center">
             <h4>Authors</h4>
             <div>
