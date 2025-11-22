@@ -1,0 +1,81 @@
+.navbar {
+    border-bottom: 1px solid grey;
+    padding-top: 0; /* remove space above navbar content */
+    padding-bottom: 0; /* remove space below navbar content */
+    align-items: center; /* vertically center flex children */
+    background-color: #FEFCE9; /* set navbar background color as requested */
+}
+
+/* Ensure the inner container doesn't add extra vertical padding */
+.navbar .container-fluid {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Remove vertical padding from the brand so the logo sits flush */
+.navbar-brand {
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;           /* place logo symbol and name next to each other */
+    align-items: center;
+    gap: 0.5rem;             /* small spacing between symbol and name */
+}
+
+/* Remove vertical padding from nav links so there is no extra space above/below links */
+.navbar-nav .nav-link {
+    padding-top: 0.25rem; /* tiny value to keep tap target reasonable; change to 0 if you want absolutely no padding */
+    padding-bottom: 0.25rem;
+    color: black;
+    font-family: "Verdana", serif;
+    font-size: 120%;
+}
+
+/* Specific sizes for the two logo parts so they appear as a single unit */
+.navbar-brand img.logo-symbol {
+    width: 100px; /* icon/symbol size */
+    height: auto;
+    display: block;
+}
+
+.navbar-brand img.logo-name {
+    height: 90px; /* keeps the name proportional to the symbol */
+    width: auto;
+    display: block;
+}
+
+@media (max-width: 767px) {
+    .navbar-brand img.logo {
+        width: 120px; /* smaller on mobile */
+    }
+    .navbar-brand img.logo-symbol {
+        width: 36px;
+    }
+    .navbar-brand img.logo-name {
+        height: 28px;
+    }
+}
+
+/* Ensure specific logo rules override the generic rule below */
+.navbar-brand img { /* fallback for other images */
+    width: 50px;
+}
+
+.nav-item {
+    margin-left: 2rem; /* space between nav items */
+}
+
+.nav-link:hover {
+    color: #595959;
+
+}
+
+.btn {
+    color: white;
+    border: none;
+    font-family: "Verdana", serif;
+    background-color: #ff1111;
+}
+
+.btn:hover {
+    background-color: #a80000;
+}

@@ -1,14 +1,29 @@
-.navbar {
-    border-bottom: 1px solid grey;
-}
-
-.navbar-brand img {
-    width: 50px;
-}
-
-/* Uniform book cover sizing */
+/* Uniform book cover sizing and layout adjustments */
 .book-cover {
-    height: 240px; /* adjust this value if you want taller/shorter covers */
-    object-fit: cover; /* keeps the image cropped to fill the area */
+    height: 240px; /* visible area height */
+    width: 100%;
+    object-fit: contain; /* show entire image without cropping */
     display: block;
+    background-color: #f8f9fa; /* subtle background when image has different aspect ratio */
+}
+
+/* Wrapper to center the books section and limit width to ~70% of screen */
+.books-wrapper {
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1200px;
+}
+@media (max-width: 768px) {
+    .books-wrapper {
+        width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* Make price more prominent */
+.book-price {
+    font-size: 1.25rem;
+    font-weight: 700;
 }
