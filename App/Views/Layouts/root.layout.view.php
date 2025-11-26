@@ -33,10 +33,10 @@
         </a>
         <ul class="navbar-nav me-auto">
             <li class="nav-item">
-                <a class="nav-link" href="<?= $link->url('home.knihy') ?>">Knihy</a>
+                <a class="nav-link" href="<?= $link->url('home.index') ?>">Domov</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="<?= $link->url('home.contact') ?>">Kontakt</a>
+                <a class="nav-link" href="<?= $link->url('home.knihy') ?>">Knihy</a>
             </li>
         </ul>
 

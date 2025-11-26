@@ -3,75 +3,92 @@
 ?>
 
 
+    <?php
+    $books = [
+            [
+                    'title' => 'Mistborn: The Final Empire',
+                    'author' => 'Brandon Sanderson',
+                    'description' => 'An enthralling fantasy about revolution, magic, and a world of ash
+                          ruled by a seemingly invincible Lord Ruler.',
+                    'price' => '€14.99',
+                    'image' => 'images/finalEmpire.jpg',
+                    'alt' => 'Mistborn cover'
+            ],
+            [
+                    'title' => 'The Lord of the Rings',
+                    'author' => 'J.R.R. Tolkien',
+                    'description' => 'The first volume of the epic journey that follows Frodo and the
+                          Fellowship as they undertake a perilous quest.',
+                    'price' => '€18.50',
+                    'image' => 'images/lotr.jpg',
+                    'alt' => 'Pán prsteňov cover'
+            ],
+            [
+                    'title' => 'The Lies of Locke Lamora',
+                    'author' => 'Scott Lynch',
+                    'description' => 'A dark, witty tale of con-artists, friendship, and survival in a
+                          corrupt city of thieves and nobles.',
+                    'price' => '€16.00',
+                    'image' => 'images/liesOfLockeLamora.jpg',
+                    'alt' => 'Lies of Locke Lamora cover'
+            ],
+            [
+                    'title' => 'The Eye of the World',
+                    'author' => 'Robert Jordan',
+                    'description' => 'The opening chapter of the legendary Wheel of Time series, following Rand al\'Thor as he is swept into a world of prophecy, danger, and destiny.',
+                    'price' => '€16.00',
+                    'image' => 'images/eyeOfTheWorld.jpg',
+                    'alt' => 'The Eye of the World cover'
+            ],
+            [
+                    'title' => 'The Way of Kings',
+                    'author' => 'Brandon Sanderson',
+                    'description' => 'An epic tale of war, honor, and mysterious magical storms as several characters struggle to survive on the shattered world of Roshar.',
+                    'price' => '€19.99',
+                    'image' => 'images/wayOfKings.jpg',
+                    'alt' => 'The Way of Kings cover'
+            ],
+            [
+                    'title' => 'The Name of the Wind',
+                    'author' => 'Patrick Rothfuss',
+                    'description' => 'A beautifully written story following Kvothe, a gifted young man who grows into the most powerful wizard the world has ever seen.',
+                    'price' => '€17.50',
+                    'image' => 'images/nameOfTheWind.jpg',
+                    'alt' => 'The Name of the Wind cover'
+            ],
+
+
+    ];
+    ?>
+
 <div class="container-fluid">
-    <div class="row mt-5">
-        <div class="col-md-4">
-            <div class="card mb-3 h-100">
-                <div class="row g-0">
-                    <div class="col-4">
-                        <img src="<?= $link->asset('images/finalEmpire.jpg') ?>" class="img-fluid rounded-start book-cover"
-                             alt="Mistborn cover">
-                    </div>
-                    <div class="col-8">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">Mistborn: The Final Empire</h5>
-                            <h6 class="card-subtitle text-muted">Brandon Sanderson</h6>
-                            <p class="card-text mt-2">An enthralling fantasy about revolution, magic, and a world of ash
-                                ruled by a seemingly invincible Lord Ruler.</p>
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <div class="fw-bold">€14.99</div>
-                                <a href="#" class="btn btn-primary">Do košíka</a>
+    <div class="row">
+        <?php foreach ($books as $book): ?>
+            <div class="col-md-4 mt-3">
+                <div class="card mb-3 h-100">
+                    <div class="row g-0 h-100">
+                        <div class="col-4 h-100">
+                            <img src="<?= $link->asset($book['image']) ?>"
+                                 class="img-fluid rounded-start book-cover h-100"
+                                 alt="<?= $book['alt'] ?>">
+                        </div>
+                        <div class="col-8">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title"><?= $book['title'] ?></h5>
+                                <h6 class="card-subtitle text-muted"><?= $book['author'] ?></h6>
+                                <p class="card-text mt-2"><?= $book['description'] ?></p>
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <div class="fw-bold"><?= $book['price'] ?></div>
+                                    <a href="#" class="btn btn-primary">Do košíka</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card mb-3 h-100">
-                <div class="row g-0">
-                    <div class="col-4">
-                        <img src="<?= $link->asset('images/lotr.jpg') ?>" class="img-fluid rounded-start book-cover"
-                             alt="Pán prsteňov cover">
-                    </div>
-                    <div class="col-8">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">The Lord of the Rings</h5>
-                            <h6 class="card-subtitle text-muted">J.R.R. Tolkien</h6>
-                            <p class="card-text mt-2">The first volume of the epic journey that follows Frodo and the
-                                Fellowship as they undertake a perilous quest.</p>
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <div class="fw-bold">€18.50</div>
-                                <a href="#" class="btn btn-primary">Do košíka</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card mb-3 h-100">
-                <div class="row g-0">
-                    <div class="col-4">
-                        <img src="<?= $link->asset('images/liesOfLockeLamora.jpg') ?>" class="img-fluid rounded-start book-cover"
-                             alt="Lies of Locke Lamora cover">
-                    </div>
-                    <div class="col-8">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">The Lies of Locke Lamora</h5>
-                            <h6 class="card-subtitle text-muted">Scott Lynch</h6>
-                            <p class="card-text mt-2">A dark, witty tale of con-artists, friendship, and survival in a
-                                corrupt city of thieves and nobles.</p>
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <div class="fw-bold">€16.00</div>
-                                <a href="#" class="btn btn-primary">Do košíka</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <?php endforeach; ?>
     </div>
+
     <div class="row mt-3">
         <div class="col text-center">
             <h4>Hunters</h4>
