@@ -62,24 +62,24 @@
     ?>
 
 <div class="container-fluid">
-    <div class="row">
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         <?php foreach ($books as $book): ?>
-            <div class="col-md-4 mt-3">
-                <div class="card mb-3 h-100">
-                    <div class="row g-0 h-100">
-                        <div class="col-4 h-100">
+            <div class="col-md-4 p-0">
+                <div class="card h-100 m-0 border-0 shadow-sm">
+                    <div class="row g-0 h-100 ">
+                        <div class="col-4 h-100 p-0">
                             <img src="<?= $link->asset($book['image']) ?>"
                                  class="img-fluid rounded-start book-cover h-100"
                                  alt="<?= $book['alt'] ?>">
                         </div>
-                        <div class="col-8">
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title"><?= $book['title'] ?></h5>
+                        <div class="col-8 p-3">
+                            <div class="card-body d-flex flex-column p-0">
+                                <h5 class="card-title fw-bold"><?= $book['title'] ?></h5>
                                 <h6 class="card-subtitle text-muted"><?= $book['author'] ?></h6>
                                 <p class="card-text mt-2"><?= $book['description'] ?></p>
                                 <div class="mt-auto d-flex justify-content-between align-items-center">
-                                    <div class="fw-bold"><?= $book['price'] ?></div>
-                                    <a href="#" class="btn btn-primary">Do košíka</a>
+                                    <div class="fw-bold fs-5"><?= $book['price'] ?></div>
+                                    <a href="#" class="btn btn-primary mr-50">Do košíka</a>
                                 </div>
                             </div>
                         </div>

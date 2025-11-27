@@ -1,9 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Orbitron:wght@400..900&display=swap');
+
+* {
+    font-family: "EB Garamond", serif;
+}
+
 .navbar {
     border-bottom: 1px solid grey;
     padding-top: 0; /* remove space above navbar content */
     padding-bottom: 0; /* remove space below navbar content */
     align-items: center; /* vertically center flex children */
     background-color: #FEFCE9; /* set navbar background color as requested */
+    font-weight: bold;
 }
 
 /* Ensure the inner container doesn't add extra vertical padding */
@@ -26,7 +33,6 @@
     padding-top: 0.25rem; /* tiny value to keep tap target reasonable; change to 0 if you want absolutely no padding */
     padding-bottom: 0.25rem;
     color: black;
-    font-family: "Verdana", serif;
     font-size: 120%;
 }
 
@@ -78,3 +84,4 @@
 .btn:hover {
     background-color: #a80000;
 }
+
