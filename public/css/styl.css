@@ -43,27 +43,15 @@
     display: block;
 }
 
-.navbar-brand img.logo-name {
-    height: 90px; /* keeps the name proportional to the symbol */
+
+.navbar-brand img.logo-symbol {
     width: auto;
-    display: block;
+    height: 70px; /* keeps aspect ratio */
 }
 
-@media (max-width: 767px) {
-    .navbar-brand img.logo {
-        width: 120px; /* smaller on mobile */
-    }
-    .navbar-brand img.logo-symbol {
-        width: 36px;
-    }
-    .navbar-brand img.logo-name {
-        height: 28px;
-    }
-}
-
-/* Ensure specific logo rules override the generic rule below */
-.navbar-brand img { /* fallback for other images */
-    width: 50px;
+.navbar-brand img.logo-name {
+    width: auto;  /* automatically adjusts width if you set height */
+    height: 80px; /* sets a fixed height */
 }
 
 .nav-item {
@@ -85,3 +73,50 @@
     background-color: #a80000;
 }
 
+
+/* Center nav items in navbar */
+.navbar-collapse {
+    justify-content: center; /* horizontálne centrovanie */
+}
+
+/* Icon + text */
+.nav-link i {
+    font-size: 1.1rem;
+}
+
+/* Gap medzi ikonou a textom */
+.nav-link.d-flex i {
+    margin-right: 0.3rem;
+}
+
+.nav-link .icon {
+    width: 50px;   /* alebo podľa potreby */
+    height: 50px;  /* zachováva proporcie */
+}
+
+
+/* Štandardne 4 knihy vedľa seba */
+.small-books {
+    gap: 0.25rem;
+}
+
+.book-card {
+    flex: 0 0 25%; /* každý zaberá 25% šírky kontajnera */
+    max-width: 25%;
+}
+
+/* Zmenšené na veľmi malé obrazovky */
+@media (max-width: 480px) {
+    .book-card {
+        flex: 0 0 25%; /* stále 4 knihy, len menšie */
+        max-width: 25%;
+    }
+    .book-card .card-body h5,
+    .book-card .card-body h6,
+    .book-card .card-body .btn {
+        font-size: 0.7rem;
+    }
+    .book-cover {
+        height: auto;
+    }
+}

@@ -38,3 +38,24 @@
         transition: all 0.3s ease;
     }
 }
+
+/* Make the "Bestsellery" title visually part of the carousel */
+.carousel-title {
+    text-align: left;
+    width: 70%;                 /* match .books-wrapper width */
+    max-width: 1200px;
+    margin: 0 auto 12px auto;   /* center and small gap to carousel */
+    font-weight: 700;
+    color: #333;
+    padding-bottom: 10px;
+    border-bottom: 3px solid rgba(0,0,0,0.06); /* subtle divider to attach it */
+}
+
+@media (max-width: 768px) {
+    .carousel-title {
+        width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+        font-size: 1.25rem;
+    }
+}

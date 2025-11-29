@@ -30,7 +30,7 @@ $books = [$mistborn, $lotr, $locke];
 
 <div class="container-fluid">
 
-    <h2 class="mb-3">Bestsellery</h2>
+    <h2 class="mb-3 carousel-title fs-2">Bestsellery</h2>
 
     <div id="carouselSeries" class="carousel slide" data-bs-touch="false" data-bs-ride="carousel">
         <div class="carousel-inner">
@@ -45,14 +45,14 @@ $books = [$mistborn, $lotr, $locke];
                     <div class="books-wrapper">
                         <div class="row mt-4">
                             <?php foreach ($series as $book): ?>
-                                <div class="col-md-3 mb-3">
-                                    <div class="card h-20 text-center border-0 shadow-sm">
+                                <div class="col-6 col-md-3 mb-3">
+                                <div class="card h-20 text-center border-0 shadow-sm">
                                         <img src="<?= $link->asset('images/' . $book['img']) ?>"
                                              class="card-img-top book-cover h-60"
                                              alt="<?= htmlspecialchars($book['title'], ENT_QUOTES) ?>">
 
                                         <div class="card-body">
-                                            <h5 class="card-title mb-1"><?= htmlspecialchars($book['title'], ENT_QUOTES) ?></h5>
+                                            <h5 class="card-title mb-1 fw-bold"><?= htmlspecialchars($book['title'], ENT_QUOTES) ?></h5>
                                             <p class="card-subtitle text-muted mb-0"><?= htmlspecialchars($book['author'], ENT_QUOTES) ?></p>
                                         </div>
 
@@ -72,14 +72,28 @@ $books = [$mistborn, $lotr, $locke];
 
         <button class="carousel-control-prev" type="button" data-bs-target="#carouselSeries" data-bs-slide="prev">
             <span class="carousel-control-prev-icon"></span>
-            <span class="visually-hidden">Previous</span>
         </button>
-
         <button class="carousel-control-next" type="button" data-bs-target="#carouselSeries" data-bs-slide="next">
             <span class="carousel-control-next-icon"></span>
-            <span class="visually-hidden">Next</span>
         </button>
     </div>
+    <script
+            const carousel = document.querySelector('#carouselSeries');
+            const nextBtn = carousel.querySelector('.carousel-control-next');
+            const prevBtn = carousel.querySelector('.carousel-control-prev');
+            const inner = carousel.querySelector('.carousel-inner');
+
+            const itemWidth = inner.querySelector('.carousel-item').offsetWidth;
+
+            nextBtn.addEventListener('click', () => {
+        inner.scrollBy({ left: itemWidth, behavior: 'smooth' });
+        });
+
+        prevBtn.addEventListener('click', () => {
+        inner.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+        });
+
+    </script>
 
 </div>
 
@@ -95,4 +109,3 @@ $books = [$mistborn, $lotr, $locke];
             </div>
         </div>
     </div>
-
