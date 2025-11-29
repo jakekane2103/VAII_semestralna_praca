@@ -89,16 +89,4 @@
         <?php endforeach; ?>
     </div>
 
-    <div class="row mt-3">
-        <div class="col text-center">
-            <h4>Hunters</h4>
-            <div>
-                <a href="">Gehrman, The First Hunter</a><br>
-                <a href="">Ludwig, The Holy Blade</a><br>
-                <a href="">Lady Maria of the Astral Clocktower</a><br><br>
-                &copy; 1329-<?= date('Y') ?> University of Yharnam, Faculty of Religion, Science and Cosmology,
-                Department of Holy Hunters
-            </div>
-        </div>
-    </div>
 </div>

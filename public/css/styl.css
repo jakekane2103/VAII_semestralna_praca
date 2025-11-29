@@ -5,7 +5,10 @@
 }
 
 .navbar {
-    border-bottom: 1px solid grey;
+    position: sticky;
+    top: 0;
+    z-index: 1030; /* nad obsahom */
+    border-bottom: 5px solid darkred;
     padding-top: 0; /* remove space above navbar content */
     padding-bottom: 0; /* remove space below navbar content */
     align-items: center; /* vertically center flex children */
@@ -119,4 +122,44 @@
     .book-cover {
         height: auto;
     }
+}
+
+
+/* FOOTER STYLES */
+
+.site-footer {
+    width: 100%;
+    background-color: #FEFCE9; /* jemná svetlá farba */
+    border-top: 3px solid darkred;
+    font-family: "EB Garamond", serif;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.footer-authors h5 {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.footer-author-list {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.footer-link {
+    color: #595959;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-link:hover {
+    color: #ff1111;
+}
+
+.footer-copy {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    line-height: 1.4;
 }

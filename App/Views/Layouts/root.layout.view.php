@@ -25,7 +25,7 @@
 
     <script src="<?= $link->asset('js/script.js') ?>"></script>
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-md">
     <div class="container-fluid">
 
@@ -106,10 +106,33 @@
 
 
 
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-3 flex-grow-1">
     <div class="web-content">
         <?= $contentHTML ?>
     </div>
 </div>
+
+
+
+<footer class="site-footer py-4 mt-auto w-100">
+    <div class="container text-center">
+        <!-- Authors section -->
+        <div class="footer-authors mb-3">
+            <h5 class="mb-2">Authors</h5>
+            <div class="footer-author-list">
+                <a href="#" class="footer-link">Artorias the Abysswalker</a>
+                <a href="#" class="footer-link">Michael Corleone</a>
+                <a href="#" class="footer-link">Geralt of Rivia</a>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="footer-copy text-muted">
+            &copy; 2020-<?= date('Y') ?> University of Žilina, Faculty of Management Science and Informatics,<br>
+            Department of Software Technologies
+        </div>
+    </div>
+</footer>
+
 </body>
 </html>

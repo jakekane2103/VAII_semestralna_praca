@@ -28,17 +28,22 @@ $locke = [
 $books = [$mistborn, $lotr, $locke];
 ?>
 
-<div class="container-fluid">
+<?php
+$sections = [
+        ['id' => 'carouselSeriesBest', 'title' => 'Bestsellery'],
+        ['id' => 'carouselSeriesNew', 'title' => 'Nové vydania'],
+        ['id' => 'carouselSeriesUpcoming', 'title' => 'Nadchádzajúce vydania'],
+];
 
-    <h2 class="mb-3 carousel-title fs-2">Bestsellery</h2>
+foreach ($sections as $section): ?>
+    <h2 class="mb-3 mt-5 carousel-title fs-2"><?= $section['title'] ?></h2>
 
-    <div id="carouselSeries" class="carousel slide" data-bs-touch="false" data-bs-ride="carousel">
+    <div id="<?= $section['id'] ?>" class="carousel slide" data-bs-touch="false" data-bs-ride="carousel">
         <div class="carousel-inner">
 
             <?php
-            $first = true; // označí prvý slide
-            foreach ($books as $series):
-                ?>
+            $first = true;
+            foreach ($books as $series): ?>
                 <div class="carousel-item <?= $first ? 'active' : '' ?>">
                     <?php $first = false; ?>
 
@@ -46,13 +51,18 @@ $books = [$mistborn, $lotr, $locke];
                         <div class="row mt-4">
                             <?php foreach ($series as $book): ?>
                                 <div class="col-6 col-md-3 mb-3">
-                                <div class="card h-20 text-center border-0 shadow-sm">
+                                    <div class="card h-30 text-center border-0 shadow-sm">
                                         <img src="<?= $link->asset('images/' . $book['img']) ?>"
                                              class="card-img-top book-cover h-60"
                                              alt="<?= htmlspecialchars($book['title'], ENT_QUOTES) ?>">
 
                                         <div class="card-body">
-                                            <h5 class="card-title mb-1 fw-bold"><?= htmlspecialchars($book['title'], ENT_QUOTES) ?></h5>
+                                            <h5 class="card-title mb-1 fw-bold">
+                                                <?= htmlspecialchars(
+                                                        mb_strimwidth($book['title'], 0, 23, '...'),
+                                                        ENT_QUOTES
+                                                ) ?>
+                                            </h5>
                                             <p class="card-subtitle text-muted mb-0"><?= htmlspecialchars($book['author'], ENT_QUOTES) ?></p>
                                         </div>
 
@@ -70,42 +80,13 @@ $books = [$mistborn, $lotr, $locke];
 
         </div>
 
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselSeries" data-bs-slide="prev">
+        <button class="carousel-control-prev" type="button" data-bs-target="#<?= $section['id'] ?>" data-bs-slide="prev">
             <span class="carousel-control-prev-icon"></span>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselSeries" data-bs-slide="next">
+        <button class="carousel-control-next" type="button" data-bs-target="#<?= $section['id'] ?>" data-bs-slide="next">
             <span class="carousel-control-next-icon"></span>
         </button>
     </div>
-    <script
-            const carousel = document.querySelector('#carouselSeries');
-            const nextBtn = carousel.querySelector('.carousel-control-next');
-            const prevBtn = carousel.querySelector('.carousel-control-prev');
-            const inner = carousel.querySelector('.carousel-inner');
+<?php endforeach; ?>
 
-            const itemWidth = inner.querySelector('.carousel-item').offsetWidth;
 
-            nextBtn.addEventListener('click', () => {
-        inner.scrollBy({ left: itemWidth, behavior: 'smooth' });
-        });
-
-        prevBtn.addEventListener('click', () => {
-        inner.scrollBy({ left: -itemWidth, behavior: 'smooth' });
-        });
-
-    </script>
-
-</div>
-
-    <div class="row mt-3">
-        <div class="col text-center">
-            <h4>Authors</h4>
-            <div>
-                <a href="">Artorias the Abysswalker</a><br>
-                <a href="">Michael Corleone</a><br>
-                <a href="">Geralt of Rivia</a><br><br>
-                &copy; 2020-<?= date('Y') ?> University of Žilina, Faculty of Management Science and Informatics,
-                Department of Software Technologies
-            </div>
-        </div>
-    </div>
