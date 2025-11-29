@@ -70,7 +70,7 @@
                 <?php if ($auth?->isLogged()) { ?>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="#">
-                            <i class="bi bi-person-fill me-1"></i> <?= $auth?->user?->name ?>
+                            <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="account" class="icon me-1 w-10"> <?= $auth?->user?->name ?>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -81,13 +81,13 @@
                 <?php } else { ?>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="<?= App\Configuration::LOGIN_URL ?>">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Prihlásiť
+                            <img src="<?= $link->asset('images/accountIcon.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
                         </a>
                     </li>
                 <?php } ?>
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center" href="#">
-                        <i class="bi bi-cart-fill me-1"></i> Košík
+                        <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="login" class="icon2 me-1 w-10">
                     </a>
                 </li>
             </ul>
@@ -113,21 +113,60 @@
 </div>
 
 
-
 <footer class="site-footer py-4 mt-auto w-100">
-    <div class="container text-center">
-        <!-- Authors section -->
-        <div class="footer-authors mb-3">
-            <h5 class="mb-2">Authors</h5>
-            <div class="footer-author-list">
-                <a href="#" class="footer-link">Artorias the Abysswalker</a>
-                <a href="#" class="footer-link">Michael Corleone</a>
-                <a href="#" class="footer-link">Geralt of Rivia</a>
+    <div class="container">
+        <div class="row text-start">
+
+            <!-- Column 1: Zákaznícka podpora -->
+            <div class="col-md-3 mb-3">
+                <h5>Zákaznícka podpora</h5>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="footer-link">Poštovné a doprava</a></li>
+                    <li><a href="#" class="footer-link">Spôsoby platby</a></li>
+                    <li><a href="#" class="footer-link">Najčastejšie otázky (FAQ)</a></li>
+                    <li><a href="#" class="footer-link">Reklamačný poriadok</a></li>
+                    <li><a href="#" class="footer-link">Obchodné podmienky</a></li>
+                    <li><a href="#" class="footer-link">Informácie o ochrane osobných údajov</a></li>
+                    <li><a href="#" class="footer-link">Vyhlásenie o prístupnosti</a></li>
+                </ul>
             </div>
+
+            <!-- Column 2: Objavujte viac -->
+            <div class="col-md-3 mb-3">
+                <h5>Objavujte viac</h5>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="footer-link">Autori</a></li>
+                    <li><a href="#" class="footer-link">Vydavateľstvá</a></li>
+                    <li><a href="#" class="footer-link">Novinky</a></li>
+                    <li><a href="#" class="footer-link">Bestsellery</a></li>
+                    <li><a href="#" class="footer-link">Predobjednávky</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 3: O nás -->
+            <div class="col-md-3 mb-3">
+                <h5>O nás</h5>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="footer-link">Kontakty</a></li>
+                    <li><a href="#" class="footer-link">Rezervácia v kníhkupectve</a></li>
+                    <li><a href="#" class="footer-link">Kariéra</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 4: Newsletter -->
+            <div class="col-md-3 mb-3">
+                <h5>Newsletter</h5>
+                <p>Prihláste sa na odber a neujdú vám žiadne knižné novinky.</p>
+                <form class="d-flex" action="#" method="post">
+                    <input type="email" class="form-control me-2" placeholder="Váš e-mail" required>
+                    <button type="submit" class="btn btn-primary">Prihlásiť</button>
+                </form>
+            </div>
+
         </div>
 
         <!-- Copyright -->
-        <div class="footer-copy text-muted">
+        <div class="text-center text-muted mt-4">
             &copy; 2020-<?= date('Y') ?> University of Žilina, Faculty of Management Science and Informatics,<br>
             Department of Software Technologies
         </div>

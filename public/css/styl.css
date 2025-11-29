@@ -97,15 +97,33 @@
     height: 50px;  /* zachováva proporcie */
 }
 
-
-/* Štandardne 4 knihy vedľa seba */
-.small-books {
-    gap: 0.25rem;
+.nav-link .icon2 {
+    width: 30px;   /* alebo podľa potreby */
+    height: 30px;  /* zachováva proporcie */
+    margin-left: 8px;
+    margin-top: 2px;
 }
 
-.book-card {
-    flex: 0 0 25%; /* každý zaberá 25% šírky kontajnera */
-    max-width: 25%;
+.carousel {
+    background-color: rgb(250, 253, 245); /* light gray for all carousels */
+}
+
+.carousel-control-prev-icon{
+    background: none;
+    width: 30px;
+    height: 30px;
+    border-left: 3px solid black; /* makes arrow shape */
+    border-bottom: 3px solid black;
+    transform: rotate(45deg);
+}
+
+.carousel-control-next-icon {
+    background: none;
+    width: 30px;
+    height: 30px;
+    border-left: 3px solid black; /* makes arrow shape */
+    border-bottom: 3px solid black;
+    transform: rotate(225deg);
 }
 
 /* Zmenšené na veľmi malé obrazovky */
@@ -130,7 +148,7 @@
 .site-footer {
     width: 100%;
     background-color: #FEFCE9; /* jemná svetlá farba */
-    border-top: 3px solid darkred;
+    border-top: 4px solid darkred;
     font-family: "EB Garamond", serif;
     font-size: 0.9rem;
     color: #333;
