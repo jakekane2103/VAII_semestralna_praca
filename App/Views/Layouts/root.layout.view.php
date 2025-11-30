@@ -52,7 +52,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('home.knihy') ?>">
+                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('books.index') ?>">
                         <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="Knihy" class="icon me-1 w-10"> Knihy
                     </a>
 
@@ -61,33 +61,36 @@
 
             <!-- DESKTOP SEARCH BAR -->
             <form class="d-none d-md-flex flex-grow-1 mx-3" role="search"
-                  method="GET" action="<?= $link->url('home.knihy') ?>">
+                  method="GET" action="<?= $link->url('books.index') ?>">
                 <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
                 <button class="btn btn-outline-success" type="submit">Hľadať</button>
             </form>
 
             <ul class="navbar-nav">
                 <?php if ($auth?->isLogged()) { ?>
+
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="#">
-                            <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="account" class="icon me-1 w-10"> <?= $auth?->user?->name ?>
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="#">
-                            <i class="bi bi-heart-fill me-1"></i> Wishlist
+                            <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
                         </a>
                     </li>
                 <?php } else { ?>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="<?= App\Configuration::LOGIN_URL ?>">
-                            <img src="<?= $link->asset('images/accountIcon.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
+                        <a class="nav-link d-flex align-items-center"
+                           data-bs-toggle="modal" data-bs-target="#loginModal"
+                           href="<?= App\Configuration::LOGIN_URL ?>">
+                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
                         </a>
                     </li>
                 <?php } ?>
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center" href="#">
-                        <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="login" class="icon2 me-1 w-10">
+                        <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
                     </a>
                 </li>
             </ul>
@@ -109,6 +112,46 @@
 <div class="container-fluid mt-3 flex-grow-1">
     <div class="web-content">
         <?= $contentHTML ?>
+    </div>
+</div>
+
+
+<!-- LOGIN MODAL -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="m-0">Prihlásenie</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="post" action="<?= $link->url('auth.login') ?>">
+                <div class="mb-3">
+                    <label for="email" class="form-label">E-mail</label>
+                    <input type="text" name="username" class="form-control" id="email">
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Heslo</label>
+
+                    <div class="input-group">
+                        <input type="password" name="password" class="form-control" id="password">
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" name="submit" class="btn btn-danger w-100">Prihlásiť sa</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <small>Nemáte u nás účet?
+                    <a href="<?= $link->url('auth.signUp') ?>">Zaregistrujte sa</a>
+                </small>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -167,8 +210,9 @@
 
         <!-- Copyright -->
         <div class="text-center text-muted mt-4">
-            &copy; 2020-<?= date('Y') ?> University of Žilina, Faculty of Management Science and Informatics,<br>
-            Department of Software Technologies
+            <img class="footerLogo" src="images/kaneVeritasLogoSymbol.png" alt="logo">
+            © 2025 Kane Veritas. Internetové kníhkupectvo. Všetky práva vyhradené.<br>
+            Engineered with coffee and too many late nights.
         </div>
     </div>
 </footer>

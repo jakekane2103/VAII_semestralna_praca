@@ -68,6 +68,11 @@ class AuthController extends BaseController
     public function logout(Request $request): Response
     {
         $this->app->getAuth()->logout();
+        return $this->redirect($this->url("home.index"));
+    }
+
+    public function signUp(): Response
+    {
         return $this->html();
     }
 }
