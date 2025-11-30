@@ -36,7 +36,7 @@ $view->setLayout('auth');
                 <div class="input-group">
                     <input type="password" name="password" class="form-control" id="password-reg" required>
                     <button class="btn btn-outline-secondary" type="button" id="togglePasswordReg">
-                        <i class="bi bi-eye"></i>
+                        <i class="bi bi-eye-slash"></i>
                     </button>
                 </div>
             </div>
@@ -47,7 +47,7 @@ $view->setLayout('auth');
                 <div class="input-group">
                     <input type="password" name="password_confirm" class="form-control" id="password-confirm-reg" required>
                     <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirmReg">
-                        <i class="bi bi-eye"></i>
+                        <i class="bi bi-eye-slash"></i>
                     </button>
                 </div>
             </div>

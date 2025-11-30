@@ -137,7 +137,7 @@
                     <div class="input-group">
                         <input type="password" name="password" class="form-control" id="password">
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                            <i class="bi bi-eye"></i>
+                            <i class="bi bi-eye-slash"></i>
                         </button>
                     </div>
                 </div>
