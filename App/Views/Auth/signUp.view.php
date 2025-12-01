@@ -34,8 +34,9 @@ $view->setLayout('auth');
             <div class="mb-3">
                 <label for="password" class="form-label">Heslo</label>
                 <div class="input-group">
-                    <input type="password" name="password" class="form-control" id="password-reg" required>
-                    <button class="btn btn-outline-secondary" type="button" id="togglePasswordReg">
+                    <input type="password" name="password" class="form-control" id="password-reg">
+                    <button class="btn btn-outline-secondary" type="button"
+                            data-toggle="password" data-target="password-reg">
                         <i class="bi bi-eye-slash"></i>
                     </button>
                 </div>
@@ -45,8 +46,9 @@ $view->setLayout('auth');
             <div class="mb-3">
                 <label for="password_confirm" class="form-label">Potvrdenie hesla</label>
                 <div class="input-group">
-                    <input type="password" name="password_confirm" class="form-control" id="password-confirm-reg" required>
-                    <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirmReg">
+                    <input type="password" name="password_confirm" class="form-control" id="password-confirm-reg">
+                    <button class="btn btn-outline-secondary" type="button"
+                            data-toggle="password" data-target="password-confirm-reg">
                         <i class="bi bi-eye-slash"></i>
                     </button>
                 </div>

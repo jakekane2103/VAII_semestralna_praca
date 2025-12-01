@@ -1,20 +1,37 @@
-document.addEventListener("DOMContentLoaded", function () {
-    const toggleBtn = document.getElementById("togglePassword");
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[data-toggle='password']").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const inputId = btn.getAttribute("data-target");
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector("i");
 
-    if (!toggleBtn) return; // ochrana ak je na stránke bez modalu
+            if (!input) return;
 
-    toggleBtn.addEventListener("click", function () {
-        const pass = document.getElementById("password");
-        const icon = this.querySelector("i");
-
-        if (pass.type === "password") {
-            pass.type = "text";
-            icon.classList.remove("bi-eye-slash");
-            icon.classList.add("bi-eye");
-        } else {
-            pass.type = "password";
-            icon.classList.remove("bi-eye");
-            icon.classList.add("bi-eye-slash");
-        }
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            }
+        });
     });
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    // Autofocus on username in login modal
+    const loginModal = document.getElementById("loginModal");
+    const loginEmailInput = document.getElementById("email");
+
+    if (loginModal && loginEmailInput) {
+        loginModal.addEventListener("shown.bs.modal", () => {
+            loginEmailInput.focus();
+        });
+    }
+
 });

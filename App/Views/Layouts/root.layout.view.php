@@ -3,7 +3,10 @@
 /** @var string $contentHTML */
 /** @var \Framework\Core\IAuthenticator $auth */
 /** @var \Framework\Support\LinkGenerator $link */
+
+include __DIR__ . '/../Auth/loginModal.php';
 ?>
+
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -60,7 +63,7 @@
             </ul>
 
             <!-- DESKTOP SEARCH BAR -->
-            <form class="d-none d-md-flex flex-grow-1 mx-3" role="search"
+            <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
                   method="GET" action="<?= $link->url('books.index') ?>">
                 <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
                 <button class="btn btn-outline-success" type="submit">Hľadať</button>
@@ -83,7 +86,7 @@
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center"
                            data-bs-toggle="modal" data-bs-target="#loginModal"
-                           href="<?= App\Configuration::LOGIN_URL ?>">
+                           href="<?= $link->url('auth.loginModal') ?>">
                             <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
                         </a>
                     </li>
@@ -112,46 +115,6 @@
 <div class="container-fluid mt-3 flex-grow-1">
     <div class="web-content">
         <?= $contentHTML ?>
-    </div>
-</div>
-
-
-<!-- LOGIN MODAL -->
-<div class="modal fade" id="loginModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="m-0">Prihlásenie</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form method="post" action="<?= $link->url('auth.login') ?>">
-                <div class="mb-3">
-                    <label for="email" class="form-label">E-mail</label>
-                    <input type="text" name="username" class="form-control" id="email">
-                </div>
-
-                <div class="mb-3">
-                    <label for="password" class="form-label">Heslo</label>
-
-                    <div class="input-group">
-                        <input type="password" name="password" class="form-control" id="password">
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                            <i class="bi bi-eye-slash"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <button type="submit" name="submit" class="btn btn-danger w-100">Prihlásiť sa</button>
-            </form>
-
-            <div class="text-center mt-3">
-                <small>Nemáte u nás účet?
-                    <a href="<?= $link->url('auth.signUp') ?>">Zaregistrujte sa</a>
-                </small>
-            </div>
-
-        </div>
     </div>
 </div>
 
