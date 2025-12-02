@@ -1,0 +1,57 @@
+INSERT INTO `kniha` 
+    (`nazov`, `autor`, `popis`, `cena`, `obrazok`, `isbn`, `pocetNaSklade`, `vazba`) VALUES
+                                                                                                           
+                                                                                                           
+                                                                                                           ('Mistborn: The Final Empire',
+                                                                                                            'Brandon Sanderson',
+                                                                                                            'An enthralling fantasy about revolution, magic, and a world of ash ruled by a seemingly invincible Lord Ruler.',
+                                                                                                            14.99,
+                                                                                                            'images/finalEmpire.jpg',
+                                                                                                            '9780765311788',
+                                                                                                            7,
+                                                                                                            'pevná'),
+
+                                                                                                           ('The Lord of the Rings',
+                                                                                                            'J.R.R. Tolkien',
+                                                                                                            'The first volume of the epic journey that follows Frodo and the Fellowship as they undertake a perilous quest.',
+                                                                                                            18.50,
+                                                                                                            'images/lotr.jpg',
+                                                                                                            '9780261103573',
+                                                                                                            9,
+                                                                                                            'pevná'),
+
+                                                                                                           ('The Lies of Locke Lamora',
+                                                                                                            'Scott Lynch',
+                                                                                                            'A dark, witty tale of con-artists, friendship, and survival in a corrupt city of thieves and nobles.',
+                                                                                                            16.00,
+                                                                                                            'images/liesOfLockeLamora.jpg',
+                                                                                                            '9780553588941',
+                                                                                                            4,
+                                                                                                            'pevná'),
+
+                                                                                                           ('The Eye of the World',
+                                                                                                            'Robert Jordan',
+                                                                                                            'The opening chapter of the legendary Wheel of Time series, following Rand al''Thor as he is swept into a world of prophecy, danger, and destiny.',
+                                                                                                            16.00,
+                                                                                                            'images/eyeOfTheWorld.jpg',
+                                                                                                            '9780812511819',
+                                                                                                            10,
+                                                                                                            'pevná'),
+
+                                                                                                           ('The Way of Kings',
+                                                                                                            'Brandon Sanderson',
+                                                                                                            'An epic tale of war, honor, and mysterious magical storms as several characters struggle to survive on the shattered world of Roshar.',
+                                                                                                            19.99,
+                                                                                                            'images/wayOfKings.jpg',
+                                                                                                            '9780765326355',
+                                                                                                            3,
+                                                                                                            'pevná'),
+
+                                                                                                           ('The Name of the Wind',
+                                                                                                            'Patrick Rothfuss',
+                                                                                                            'A beautifully written story following Kvothe, a gifted young man who grows into the most powerful wizard the world has ever seen.',
+                                                                                                            17.50,
+                                                                                                            'images/nameOfTheWind.jpg',
+                                                                                                            '9780756404741',
+                                                                                                            8,
+                                                                                                            'pevná');

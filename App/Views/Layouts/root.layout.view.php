@@ -24,6 +24,7 @@ include __DIR__ . '/../Auth/loginModal.php';
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="<?= $link->asset('css/styl.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/knihy.css') ?>">
+    <link rel="stylesheet" href="<?= $link->asset('css/kosik.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <script src="<?= $link->asset('js/script.js') ?>"></script>
@@ -92,7 +93,7 @@ include __DIR__ . '/../Auth/loginModal.php';
                     </li>
                 <?php } ?>
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="#">
+                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.cart') ?>">
                         <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
                     </a>
                 </li>

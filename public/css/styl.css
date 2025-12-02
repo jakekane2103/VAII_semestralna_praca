@@ -108,6 +108,18 @@
     background-color: rgb(250, 253, 245); /* light gray for all carousels */
 }
 
+/* Make the "Bestsellery" title visually part of the carousel */
+.carousel-title {
+    text-align: left;
+    width: 70%;                 /* match .books-wrapper width */
+    max-width: 1200px;
+    margin: 0 auto 12px auto;   /* center and small gap to carousel */
+    font-weight: 700;
+    color: #333;
+    padding-bottom: 10px;
+    border-bottom: 3px solid rgba(0,0,0,0.06); /* subtle divider to attach it */
+}
+
 .carousel-control-prev-icon{
     background: none;
     width: 30px;

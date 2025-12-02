@@ -29,10 +29,10 @@ $sections = [
 
 
 foreach ($sections as $section): ?>
-    <h2 class="mb-1 mt-2 carousel-title fs-2"><?= $section['title'] ?></h2>
+    <h2 class="mb-1 mt-5 carousel-title fs-1"><?= $section['title'] ?></h2>
 
     <div id="<?= $section['id'] ?>" class="carousel slide" data-bs-touch="false" data-bs-ride="carousel">
-        <div class="carousel-inner">
+        <div class="carousel-inner mb-2">
             <?php
             $chunks = array_chunk($books, 4); // 4 books per slide
             foreach ($chunks as $index => $chunk): ?>
@@ -68,7 +68,5 @@ foreach ($sections as $section): ?>
             <span class="carousel-control-next-icon"></span>
         </button>
     </div>
-
-
 
 <?php endforeach; ?>
