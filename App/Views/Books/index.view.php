@@ -1,23 +1,17 @@
 <?php
 /** @var \Framework\Support\LinkGenerator $link */
-
-    use Framework\DB\Connection;
-
-    $conn = Connection::getInstance();
-    $sql = "SELECT * FROM kniha";
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute(); // spustí dotaz
-        $books = $stmt->fetchAll(); // získa dáta
-    } catch (Exception $e) {
-        die('Chyba pri práci s databázou: ' . $e->getMessage());
-    }
+/** @var array $books */
+/** @var string $q */
 
 ?>
 
-
 <div class="container-fluid">
-    <?php for ($i = 0; $i < 3; $i++): ?>
+    <?php if ($q !== ''): ?>
+        <div class="alert alert-info">
+            Výsledky vyhľadávania pre: <strong><?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?></strong>
+            (nájdených <?= count($books) ?> kníh)
+        </div>
+    <?php endif; ?>
     <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
         <?php foreach ($books as $book): ?>
             <div class="col-md-4 p-0">
@@ -46,5 +40,4 @@
             </div>
         <?php endforeach; ?>
     </div>
-    <?php endfor; ?>
 </div>

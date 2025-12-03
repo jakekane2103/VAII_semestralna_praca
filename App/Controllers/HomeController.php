@@ -59,4 +59,9 @@ class HomeController extends BaseController
     {
         return $this->html();
     }
+
+    public function importBooks(): Response
+    {
+        return $this->html();
+    }
 }

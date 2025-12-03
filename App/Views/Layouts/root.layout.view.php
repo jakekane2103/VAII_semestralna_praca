@@ -65,7 +65,7 @@ include __DIR__ . '/../Auth/loginModal.php';
 
             <!-- DESKTOP SEARCH BAR -->
             <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
-                  method="GET" action="<?= $link->url('books.index') ?>">
+                  method="GET" action="<?= $link->url('cart.index') ?>">
                 <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
                 <button class="btn btn-outline-success" type="submit">Hľadať</button>
             </form>
@@ -93,7 +93,7 @@ include __DIR__ . '/../Auth/loginModal.php';
                     </li>
                 <?php } ?>
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.cart') ?>">
+                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
                         <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
                     </a>
                 </li>
@@ -104,7 +104,7 @@ include __DIR__ . '/../Auth/loginModal.php';
 
     <!-- MOBILE search bar under navbar -->
     <div class="navbar-search-mobile d-md-none px-3 py-2 w-100">
-        <form class="d-flex" role="search" method="GET" action="<?= $link->url('home.knihy') ?>">
+        <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index') ?>">
             <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
             <button class="btn btn-success" type="submit">Hľadať</button>
         </form>

@@ -6,7 +6,7 @@
 use Framework\DB\Connection;
 
 $conn = Connection::getInstance();
-$sql = "SELECT * FROM kniha";
+$sql = "SELECT * FROM kniha  LIMIT 4";
 try {
     $stmt = $conn->prepare($sql);
     $stmt->execute(); // spustí dotaz

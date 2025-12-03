@@ -42,8 +42,4 @@ class CartController extends BaseController
         return $this->html();
     }
 
-    public function cart(): Response
-    {
-        return $this->html();
-    }
 }
