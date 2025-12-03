@@ -13,11 +13,9 @@ try {
 } catch (Exception $e) {
     die('Chyba pri práci s databázou: ' . $e->getMessage());
 }
-
 ?>
 
 <div class="container-fluid">
-
     <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
         <?php foreach ($books as $book): ?>
             <div class="col-md-4 p-0">
