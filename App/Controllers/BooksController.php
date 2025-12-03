@@ -40,30 +40,6 @@ class BooksController extends BaseController
      */
     public function index(Request $request): Response
     {
-        // Get search query from GET parameters
-        $q = trim((string)($request->getQuery('q') ?? ''));
-
-        $conn = Connection::getInstance();
-
-        if ($q !== '') {
-            // Search by title (nazov), author (autor), or series (seria)
-            $sql = "SELECT * FROM kniha WHERE nazov LIKE :q OR autor LIKE :q OR seria LIKE :q";
-            $stmt = $conn->prepare($sql);
-            $like = '%' . $q . '%';
-            $stmt->bindParam(':q', $like);
-        } else {
-            // No search: show all books
-            $sql = "SELECT * FROM kniha";
-            $stmt = $conn->prepare($sql);
-        }
-
-        $stmt->execute();
-        $books = $stmt->fetchAll();
-
-        return $this->html([
-            'books' => $books,
-            'q' => $q,
-        ]);
+        return $this->html();
     }
-
 }
