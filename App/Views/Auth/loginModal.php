@@ -3,6 +3,18 @@
  * @var \Framework\Support\LinkGenerator $link */ /**
  * @var \Framework\Support\View $view
  */
+
+// Ensure session is active and read any auth error set by AuthController
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
+$authError = $_SESSION['auth_login_error'] ?? null;
+if ($authError) {
+    // remove it so it doesn't persist
+    unset($_SESSION['auth_login_error']);
+}
+
+$shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authError !== null;
 ?>
 
     <!-- LOGIN MODAL -->
@@ -14,14 +26,20 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form method="post" action="<?= $link->url('auth.login') ?>">
+            <?php if ($authError): ?>
+                <div class="alert alert-danger mx-3" role="alert">
+                    <?= htmlspecialchars($authError, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="post" action="<?= $link->url('auth.login', [], true) ?>">
                 <div class="mb-3">
                     <label for="email" class="form-label">E-mail</label>
                     <input type="text" name="username" class="form-control" id="email">
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label">Heslo</label>
+                    <label for="password-login" class="form-label">Heslo</label>
                     <div class="input-group">
                         <input type="password" name="password" class="form-control" id="password-login">
                         <button class="btn btn-outline-secondary" type="button"
@@ -44,4 +62,17 @@
         </div>
     </div>
 </div>
-<?php
+
+<?php if ($shouldOpen): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+        } catch (e) {
+            // bootstrap not available or other error
+            console.error(e);
+        }
+    });
+</script>
+<?php endif; ?>

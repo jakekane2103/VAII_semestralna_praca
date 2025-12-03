@@ -40,6 +40,31 @@ class BooksController extends BaseController
      */
     public function index(Request $request): Response
     {
-        return $this->html();
+        // Read search query from GET (desktop and mobile forms submit here)
+        $q = '';
+        $raw = $request->get('q');
+        if ($raw !== null) {
+            $q = trim((string)$raw);
+        }
+
+        $conn = Connection::getInstance();
+
+        if ($q === '') {
+            // No search term -> return all books (limited to reasonable count)
+            $stmt = $conn->prepare("SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria FROM kniha ORDER BY nazov LIMIT 200");
+            $stmt->execute();
+        } else {
+            // Search by nazov, autor or seria (case-insensitive by DB collation)
+            $sql = "SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria
+                    FROM kniha
+                    WHERE nazov LIKE :q OR autor LIKE :q OR seria LIKE :q
+                    ORDER BY nazov LIMIT 200";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':q' => '%' . $q . '%']);
+        }
+
+        $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $this->html(['books' => $books, 'q' => $q]);
     }
 }

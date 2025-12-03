@@ -8,21 +8,22 @@ use Framework\Core\IAuthenticator;
 use Framework\Core\IIdentity;
 use Framework\Http\Session;
 use App\Models\User;
+use Framework\DB\Connection;
 
 /**
  * Class DummyAuthenticator
- * A basic implementation of user authentication using hardcoded credentials.
+ * A basic implementation of user authentication using either database-backed users or hardcoded credentials.
  *
  * @package App\Auth
  * @property-read User|null $user Associated authenticated user object (or null if not logged in).
  */
 class DummyAuthenticator implements IAuthenticator
 {
-    // Hardcoded username for authentication
+    // Hardcoded username for fallback authentication
     public const LOGIN = "admin";
     // Hash of the password "admin"
     public const PASSWORD_HASH = '$2y$10$GRA8D27bvZZw8b85CAwRee9NH5nj4CQA6PDFMc90pN9Wi4VAWq3yq';
-    // Display name for the logged-in user
+    // Display name for the logged-in user (fallback)
     public const USERNAME = "Admin";
     // Application instance
     private App $app;
@@ -43,21 +44,46 @@ class DummyAuthenticator implements IAuthenticator
     }
 
     /**
-     * Authenticates a user based on hardcoded login and password.
+     * Authenticates a user.
      *
-     * @param string $username User's login attempt.
-     * @param string $password User's password attempt.
+     * This implementation first attempts to authenticate against the `zakaznik` database table using the provided
+     * username (email) and password. If DB auth fails or DB is unreachable, it falls back to the hardcoded admin
+     * credentials.
+     *
+     * @param string $username User's login attempt (email)
+     * @param string $password User's password attempt
      * @return bool Returns true if authentication is successful; false otherwise.
      */
     public function login(string $username, string $password): bool
     {
-        // Check if the provided login and password match the hardcoded credentials
+        // Try DB-backed authentication first
+        try {
+            $conn = Connection::getInstance();
+            $stmt = $conn->prepare('SELECT id_zakaznik, meno, priezvisko, email, heslo FROM zakaznik WHERE email = :email LIMIT 1');
+            $stmt->execute([':email' => $username]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($row && isset($row['heslo'])) {
+                if (password_verify($password, $row['heslo'])) {
+                    // Create User identity with id and first name
+                    $user = new User(id: (int)$row['id_zakaznik'], username: $row['email'], name: $row['meno']);
+                    $this->user = $user;
+                    $this->session->set('user', $this->user);
+                    return true;
+                }
+                return false; // password mismatch
+            }
+        } catch (Exception $e) {
+            // If DB fails, fall through to fallback method below
+        }
+
+        // Fallback to existing hardcoded admin credentials
         if ($username == self::LOGIN && password_verify($password, self::PASSWORD_HASH)) {
             $this->user = new User(id: null, username: self::LOGIN, name: self::USERNAME);
-            // Store the entire User object in the session
             $this->session->set('user', $this->user);
             return true;
         }
+
         return false; // Authentication failed
     }
 

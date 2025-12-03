@@ -45,16 +45,27 @@ class AuthController extends BaseController
      */
     public function login(Request $request): Response
     {
-        $logged = null;
-        if ($request->hasValue('submit')) {
-            $logged = $this->app->getAuth()->login($request->value('username'), $request->value('password'));
-            if ($logged) {
-                return $this->redirect($this->url("admin.index"));
-            }
+        // If this is not a POST submit, redirect to home — login is handled via the modal
+        if (!$request->hasValue('submit')) {
+            return $this->redirect($this->url('home.index'));
         }
 
-        $message = $logged === false ? 'Bad username or password' : null;
-        return $this->html(compact("message"));
+        // Handle login POST
+        $username = (string)$request->value('username');
+        $password = (string)$request->value('password');
+        $ok = $this->app->getAuth()->login($username, $password);
+        if ($ok) {
+            // Redirect back to referer so navbar updates; fallback to home
+            $referer = $request->server('HTTP_REFERER');
+            if ($referer && is_string($referer) && $referer !== '') {
+                return $this->redirect($referer);
+            }
+            return $this->redirect($this->url('home.index'));
+        }
+
+        // On failure: store error in session and redirect to home with openLogin to auto-open modal
+        $this->app->getSession()->set('auth_login_error', 'Neplatné prihlasovacie údaje. Skúste znova.');
+        return $this->redirect($this->url('home.index', ['openLogin' => 1]));
     }
 
     /**
@@ -74,5 +85,86 @@ class AuthController extends BaseController
     public function signUp(): Response
     {
         return $this->html();
+    }
+
+    /**
+     * Handle registration POST from sign-up form.
+     */
+    public function register(Request $request): Response
+    {
+        // Only handle form submissions
+        if (!$request->hasValue('submit')) {
+            return $this->redirect($this->url('auth.signUp'));
+        }
+
+        $meno = trim((string)$request->value('meno'));
+        $priezvisko = trim((string)$request->value('priezvisko'));
+        $email = trim((string)$request->value('email'));
+        $password = (string)$request->value('password');
+        $passwordConfirm = (string)$request->value('password_confirm');
+        $gdpr = $request->value('gdpr');
+
+        // Basic validation
+        if ($meno === '' || $priezvisko === '' || $email === '' || $password === '') {
+            $message = 'Vyplňte všetky povinné polia.';
+            return $this->html(['message' => $message], 'signUp');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Neplatná e-mailová adresa.';
+            return $this->html(['message' => $message], 'signUp');
+        }
+
+        if ($password !== $passwordConfirm) {
+            $message = 'Heslá sa nezhodujú.';
+            return $this->html(['message' => $message], 'signUp');
+        }
+
+        if (strlen($password) < 6) {
+            $message = 'Heslo musí mať aspoň 6 znakov.';
+            return $this->html(['message' => $message], 'signUp');
+        }
+
+        if (!$gdpr) {
+            $message = 'Musíte súhlasiť s ochranou osobných údajov.';
+            return $this->html(['message' => $message], 'signUp');
+        }
+
+        // Check for existing email
+        try {
+            $conn = \Framework\DB\Connection::getInstance();
+            $check = $conn->prepare('SELECT id_zakaznik FROM zakaznik WHERE email = :email LIMIT 1');
+            $check->execute([':email' => $email]);
+            $exists = $check->fetchAll(\PDO::FETCH_ASSOC);
+            if (!empty($exists)) {
+                $message = 'E-mail už existuje. Ak máte účet, prihláste sa.';
+                return $this->html(['message' => $message], 'signUp');
+            }
+
+            // Hash password and insert
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $username = $email; // use email as username by default
+
+            $insert = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
+            $ok = $insert->execute([
+                ':uname' => $username,
+                ':meno' => $meno,
+                ':priezvisko' => $priezvisko,
+                ':email' => $email,
+                ':heslo' => $hash
+            ]);
+
+            if ($ok) {
+                // Redirect to login page after registration
+                return $this->redirect($this->url('auth.login'));
+            }
+
+            $message = 'Registrácia zlyhala. Skúste to neskôr.';
+            return $this->html(['message' => $message], 'signUp');
+
+        } catch (\Exception $e) {
+            $message = 'Chyba pri ukladaní do databázy: ' . $e->getMessage();
+            return $this->html(['message' => $message], 'signUp');
+        }
     }
 }

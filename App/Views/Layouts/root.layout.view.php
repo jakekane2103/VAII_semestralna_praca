@@ -65,8 +65,11 @@ include __DIR__ . '/../Auth/loginModal.php';
 
             <!-- DESKTOP SEARCH BAR -->
             <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
-                  method="GET" action="<?= $link->url('cart.index') ?>">
-                <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
+                  method="GET" action="<?= $link->url('books.index', [], true) ?>">
+                <label for="desktop-search-input" class="visually-hidden">Hľadať knihy</label>
+                <input type="hidden" name="c" value="books">
+                <input type="hidden" name="a" value="index">
+                <input id="desktop-search-input" class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
                 <button class="btn btn-outline-success" type="submit">Hľadať</button>
             </form>
 
@@ -104,8 +107,10 @@ include __DIR__ . '/../Auth/loginModal.php';
 
     <!-- MOBILE search bar under navbar -->
     <div class="navbar-search-mobile d-md-none px-3 py-2 w-100">
-        <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index') ?>">
-            <input class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy">
+        <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index', [], true) ?>">
+            <label for="mobile-search-input" class="visually-hidden">Hľadať knihy</label>
+            <input type="hidden" name="c" value="books">
+            <input type="hidden" name="a" value="index">
             <button class="btn btn-success" type="submit">Hľadať</button>
         </form>
     </div>
