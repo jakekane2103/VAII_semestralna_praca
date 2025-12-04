@@ -55,4 +55,20 @@
     border-top: 1px solid rgba(0,0,0,0.05); /* jemný oddelovač */
 }
 
+.authorFoundBooks {
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    margin-top: -1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem 4vw;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
 
+.authorFoundBooks h3 {
+    margin-bottom: 0.25rem;
+}
+
+.authorFoundBooks p {
+    margin-bottom: 0.25rem;
+}

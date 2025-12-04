@@ -21,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-
 document.addEventListener("DOMContentLoaded", () => {
 
     // Autofocus on username in login modal

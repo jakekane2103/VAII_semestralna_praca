@@ -47,6 +47,13 @@ class BooksController extends BaseController
             $q = trim((string)$raw);
         }
 
+        // Detect if this is an "author view" (clicked on author name)
+        $authorFilter = null;
+        $authorFlag = $request->get('author');
+        if ($authorFlag !== null && $q !== '') {
+            $authorFilter = $q; // we treat q as exact author name for header
+        }
+
         $conn = Connection::getInstance();
 
         if ($q === '') {
@@ -65,6 +72,34 @@ class BooksController extends BaseController
 
         $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        return $this->html(['books' => $books, 'q' => $q]);
+        return $this->html([
+            'books'        => $books,
+            'q'            => $q,
+            'authorFilter' => $authorFilter,
+        ]);
+    }
+
+    /**
+     * Shows detail of a single book.
+     */
+    public function detail(Request $request): Response
+    {
+        $id = $request->get('id');
+        if ($id === null || !ctype_digit((string)$id)) {
+            // fallback: redirect back to books list
+            return $this->redirect($this->url('Books.index'));
+        }
+
+        $conn = Connection::getInstance();
+        $stmt = $conn->prepare("SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria, ISBN FROM kniha WHERE id_kniha = :id");
+        $stmt->execute([':id' => $id]);
+        $book = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$book) {
+            // book not found, go back to list
+            return $this->redirect($this->url('Books.index'));
+        }
+
+        return $this->html(['book' => $book], 'BookDetail');
     }
 }

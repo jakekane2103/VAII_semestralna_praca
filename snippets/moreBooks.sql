@@ -1,13 +1,13 @@
 INSERT INTO kniha (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, seria)
 VALUES
     (
-        'Wind and Truth',
-        'Brandon Sanderson',
-        'The final installment of the Stormlight Archive, concluding the epic saga with the fate of Roshar and its heroes.',
-        29.99,
-        'images/wind_and_truth.jpg',
+        'Adrian je gay',
+        'Universal Truth',
+        'No need to explain what all of us already know...',
+        0.03,
+        'images/rizoto.jpg',
         'pevná',
-        6,
-        '9780765349999',
-        'Stormlight Archive'
+        1,
+        '9780765300009',
+        ''
     );
