@@ -28,6 +28,7 @@ include __DIR__ . '/../Auth/loginModal.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <script src="<?= $link->asset('js/script.js') ?>"></script>
+
 </head>
 <body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-md">
@@ -124,6 +125,12 @@ include __DIR__ . '/../Auth/loginModal.php';
     </div>
 </div>
 
+<?php if ($auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin') { ?>
+    <!-- Global ADMIN PANEL floating button (visible only for admin user) -->
+    <a href="<?= $link->url('admin.index') ?>" class="btn btn-warning admin-panel-fab">
+        ADMIN PANEL
+    </a>
+<?php } ?>
 
 <footer class="site-footer py-4 mt-auto w-100">
     <div class="container">

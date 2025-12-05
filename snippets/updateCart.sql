@@ -1,0 +1,5 @@
+ALTER TABLE zakaznik MODIFY id_zakaznik VARCHAR(64) NOT NULL;
+ALTER TABLE kosik MODIFY id_zakaznik VARCHAR(64) NOT NULL;
+ALTER TABLE objednavka MODIFY id_zakaznik VARCHAR(64) NOT NULL;
+
+
