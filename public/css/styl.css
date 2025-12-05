@@ -69,11 +69,35 @@
     color: white;
     border: none;
     font-family: "Verdana", serif;
-    background-color: #ff1111;
+    background-color: #ff1111; /* base red */
 }
 
-.btn:hover {
-    background-color: #a80000;
+/* Ensure Bootstrap variants use our red palette */
+.btn-primary,
+.btn-danger {
+    background-color: #ff1111;
+    border-color: #ff1111;
+    color: #fff;
+}
+
+/* Hover: lighter shade of red only */
+.btn:hover,
+.btn-primary:hover,
+.btn-danger:hover,
+.btn-outline-danger:hover {
+    background-color: #ff4d4d; /* lighter red */
+    border-color: #ff4d4d;
+    color: #fff;
+    transition: 0.25s;
+}
+
+/* Remove blue-ish focus glow */
+.btn:focus,
+.btn-primary:focus,
+.btn-danger:focus,
+.btn-outline-danger:focus {
+    box-shadow: none;
+    outline: none;
 }
 
 
@@ -200,10 +224,16 @@
 }
 
 .admin-panel-fab {
-    background-color: blue;
+    font-size: 140%;
+    background-color: #0000ac;
     position: fixed;
     right: 1.5rem;
     bottom: 1.5rem;
     z-index: 1050;
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+.admin-panel-fab:hover {
+    background-color: #0000e3;
+    color: white;
 }

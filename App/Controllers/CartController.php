@@ -85,19 +85,13 @@ class CartController extends BaseController
         // Find or create user's cart
         $conn->beginTransaction();
         try {
-            $stmt = $conn->prepare('SELECT id_kosik FROM kosik WHERE id_zakaznik = :uid LIMIT 1');
-            $stmt->execute([':uid' => $user->getId()]);
-            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-            if ($row) {
-                $cartId = (int)$row['id_kosik'];
-            } else {
-                $insert = $conn->prepare('INSERT INTO kosik (id_zakaznik) VALUES (:uid)');
-                $insert->execute([':uid' => $user->getId()]);
-                $cartId = (int)$conn->lastInsertId();
+            $cartId = $this->getOrCreateCartId($conn, $user->getId());
+            if ($cartId === null) {
+                error_log('[Cart.add] Failed to get/create cart for customerId=' . $user->getId());
+                $conn->rollBack();
+                return $this->redirect($this->url('Cart.index'));
             }
 
-            // Insert or update cart line
             $line = $conn->prepare('SELECT mnozstvo FROM kosikKniha WHERE id_kosik = :cid AND id_kniha = :bid');
             $line->execute([':cid' => $cartId, ':bid' => $bookId]);
             $existing = $line->fetch(\PDO::FETCH_ASSOC);
@@ -106,19 +100,37 @@ class CartController extends BaseController
                 $newQty = (int)$existing['mnozstvo'] + $qty;
                 $upd = $conn->prepare('UPDATE kosikKniha SET mnozstvo = :q WHERE id_kosik = :cid AND id_kniha = :bid');
                 $upd->execute([':q' => $newQty, ':cid' => $cartId, ':bid' => $bookId]);
+                error_log('[Cart.add] Updated existing line cartId=' . $cartId . ' bookId=' . $bookId . ' qty=' . $newQty);
             } else {
                 $ins = $conn->prepare('INSERT INTO kosikKniha (id_kosik, id_kniha, mnozstvo) VALUES (:cid, :bid, :q)');
                 $ins->execute([':cid' => $cartId, ':bid' => $bookId, ':q' => $qty]);
+                error_log('[Cart.add] Inserted new line cartId=' . $cartId . ' bookId=' . $bookId . ' qty=' . $qty);
             }
+
+            // Compute full cart total after change
+            $totalStmt = $conn->prepare('SELECT SUM(k.cena * kk.mnozstvo) AS total
+                                         FROM kosikKniha kk
+                                         JOIN kniha k ON kk.id_kniha = k.id_kniha
+                                         WHERE kk.id_kosik = :cid');
+            $totalStmt->execute([':cid' => $cartId]);
+            $totalRow = $totalStmt->fetch(\PDO::FETCH_ASSOC) ?: ['total' => 0];
+            $cartTotal = (float)($totalRow['total'] ?? 0);
 
             $conn->commit();
         } catch (\Throwable $e) {
             $conn->rollBack();
-            // On error just go back to cart; error handler will log details
+            error_log('[Cart.add] Exception: ' . $e->getMessage());
             return $this->redirect($this->url('Cart.index'));
         }
 
-        // After adding, redirect to cart page
+        // If the request was AJAX (from JS fetch), return a tiny JSON payload including full cart total
+        if ($request->isAjax()) {
+            return $this->json([
+                'success' => true,
+                'cartTotal' => $cartTotal,
+            ]);
+        }
+
         return $this->redirect($this->url('Cart.index'));
     }
 
@@ -212,3 +224,4 @@ class CartController extends BaseController
         return null;
     }
 }
+

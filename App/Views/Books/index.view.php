@@ -59,14 +59,19 @@
                                     <div class="d-flex gap-2 align-items-center">
                                         <button type="button" role="button" class="btn btn-outline-danger btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
                                                 data-book-id="<?= htmlspecialchars($book['id'] ?? $book['ISBN'] ?? $book['nazov'], ENT_QUOTES, 'UTF-8') ?>" aria-pressed="false">
-                                            <svg width="18" height="18" fill="currentColor" class="bi bi-heart heart-icon" viewBox="0 0 16 16" focusable="false" aria-hidden="true">
-                                                <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385C3.12 10.286 8 13 8 13s4.88-2.714 6.286-5.562c.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"></path>
+                                            <svg width="18" height="18" fill="currentColor" class="bi bi-heart heart-icon" viewBox="0 0 16 16">
+                                                 <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385C3.12 10.286 8 13 8 13s4.88-2.714 6.286-5.562c.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"></path>
                                             </svg>
                                             <span class="visually-hidden">Pridať do wishlistu</span>
                                         </button>
 
-                                        <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0">
-                                            <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'] ?? $book['ISBN'] ?? $book['nazov'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <!-- replaced plain form with AJAX-capable form (class js-add-to-cart) -->
+                                        <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0 js-add-to-cart"
+                                              data-book-title="<?= htmlspecialchars($book['nazov'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                              data-book-author="<?= htmlspecialchars($author, ENT_QUOTES, 'UTF-8') ?>"
+                                              data-book-image="<?= $link->asset($book['obrazok']) ?>"
+                                              data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
                                             <input type="hidden" name="qty" value="1">
                                             <button type="submit" class="btn btn-primary">Do košíka</button>
                                         </form>
@@ -79,4 +84,53 @@
             </div>
         <?php endforeach; ?>
     </div>
+
+    <!-- Add to Cart confirmation modal (richer design) -->
+    <div class="modal fade" id="addToCartModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0">
+          <div class="modal-header border-0">
+            <h5 class="modal-title text-success mb-0">Do košíka ste práve pridali:</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zatvoriť"></button>
+          </div>
+          <div class="modal-body p-3">
+            <div class="d-flex align-items-start gap-3">
+              <img id="addToCartModalImg" src="" alt="" style="width:auto;height:108px;object-fit:cover;border-radius:.25rem;box-shadow:0 2px 6px rgba(0,0,0,0.15)" />
+              <div class="flex-grow-1">
+                <div id="addToCartModalTitle" class="fw-bold"></div>
+                <div id="addToCartModalAuthor" class="text-muted small"></div>
+                <div id="addToCartModalPrice" class="text-success fw-bold mt-2"></div>
+              </div>
+            </div>
+
+            <div class="text-center my-3">
+              <a href="#" id="addToCartModalViewAll" class="text-decoration-none">Zobraziť všetky →</a>
+            </div>
+
+            <div class="small text-muted text-center" id="addToCartModalShippingText">
+              Nakúpte ešte za <strong id="addToCartModalRemaining">0,00 €</strong> a dopravu do výdajných miest máte zadarmo.
+            </div>
+            <div class="progress mt-2" style="height:8px;">
+              <div id="addToCartModalProgress" class="progress-bar bg-success" role="progressbar" style="width:0%"></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <div>
+                <div class="small text-muted">Spolu</div>
+                <div id="addToCartModalTotal" class="fw-bold fs-4"></div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="button" id="addToCartModalEdit" class="btn btn-outline-secondary">Pokračovať v nákupe</button>
+                <button type="button" id="addToCartModalCheckout" class="btn btn-danger">Košík</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.BOOKS_CART_URL = <?= json_encode($link->url('Cart.index')) ?>;
+    </script>
+    <script src="<?= $link->asset('js/books.js') ?>"></script>
 </div>

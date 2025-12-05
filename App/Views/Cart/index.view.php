@@ -15,15 +15,23 @@ $total = 0;
                 $quantity = (int)($item['mnozstvo'] ?? 1);
                 $itemTotal = (float)$item['cena'] * $quantity;
                 $total += $itemTotal;
+                // Precompute book detail URL
+                $detailUrl = $link->url('Books.detail', ['id' => (int)$item['id_kniha']]);
                 ?>
                 <div class="col-12">
                     <div class="card cart-item border-0 shadow-sm p-3 d-flex flex-row align-items-center">
-                        <img src="<?= $link->asset($item['obrazok']) ?>"
-                             alt="<?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>"
-                             class="cart-img me-3">
+                        <a href="<?= $detailUrl ?>" class="d-inline-block">
+                            <img src="<?= $link->asset($item['obrazok']) ?>"
+                                 alt="<?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>"
+                                 class="cart-img me-3">
+                        </a>
 
                         <div class="cart-details flex-grow-1">
-                            <h5 class="mb-1"><?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?></h5>
+                            <h5 class="mb-1">
+                                <a href="<?= $detailUrl ?>" class="text-decoration-none text-dark">
+                                    <?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>
+                                </a>
+                            </h5>
                             <small class="text-muted"><?= htmlspecialchars($item['autor'], ENT_QUOTES, 'UTF-8') ?></small>
                         </div>
 
