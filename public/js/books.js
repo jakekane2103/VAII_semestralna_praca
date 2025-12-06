@@ -47,6 +47,11 @@
         submitBtn.innerHTML = 'Pridávam...';
       }
 
+      // Prevent navigating to cart while add request is ongoing
+      if (btnCheckout) {
+        btnCheckout.disabled = true;
+      }
+
       try {
         const response = await fetch(form.action, {
           method: form.method || 'POST',
@@ -140,6 +145,10 @@
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalBtnText;
+        }
+        // Re-enable the checkout button after the add request completes
+        if (btnCheckout) {
+          btnCheckout.disabled = false;
         }
       }
     };

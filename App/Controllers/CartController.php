@@ -80,9 +80,40 @@ class CartController extends BaseController
             return $this->redirect($this->url('Cart.index'));
         }
 
+        // Protect against duplicate rapid adds from the UI (e.g., double-click or racing requests)
+        $session = $this->app->getSession();
+        $last = $session->get('last_add', null);
+        $now = time();
+        $dedupeWindow = 2; // seconds
+        $isDuplicate = false;
+        if (is_array($last) && isset($last['id']) && isset($last['ts'])) {
+            if ((int)$last['id'] === $bookId && ($now - (int)$last['ts']) < $dedupeWindow) {
+                $isDuplicate = true;
+            }
+        }
+
         $conn = Connection::getInstance();
 
-        // Find or create user's cart
+        // If duplicate, skip DB mutation but still compute cart total to return consistent response
+        if ($isDuplicate) {
+            // compute current cart total
+            $cartId = $this->getOrCreateCartId($conn, $user->getId());
+            $totalStmt = $conn->prepare('SELECT SUM(k.cena * kk.mnozstvo) AS total
+                                         FROM kosikKniha kk
+                                         JOIN kniha k ON kk.id_kniha = k.id_kniha
+                                         WHERE kk.id_kosik = :cid');
+            $totalStmt->execute([':cid' => $cartId]);
+            $totalRow = $totalStmt->fetch(\PDO::FETCH_ASSOC) ?: ['total' => 0];
+            $cartTotal = (float)($totalRow['total'] ?? 0);
+
+            if ($request->isAjax()) {
+                return $this->json(['success' => true, 'cartTotal' => $cartTotal, 'note' => 'duplicate_skipped']);
+            }
+
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        // Not duplicate — proceed normally and record last_add
         $conn->beginTransaction();
         try {
             $cartId = $this->getOrCreateCartId($conn, $user->getId());
@@ -117,6 +148,10 @@ class CartController extends BaseController
             $cartTotal = (float)($totalRow['total'] ?? 0);
 
             $conn->commit();
+
+            // record last_add
+            $session->set('last_add', ['id' => $bookId, 'ts' => $now]);
+
         } catch (\Throwable $e) {
             $conn->rollBack();
             error_log('[Cart.add] Exception: ' . $e->getMessage());

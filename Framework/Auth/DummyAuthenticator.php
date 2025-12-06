@@ -69,6 +69,58 @@ class DummyAuthenticator implements IAuthenticator
                     $user = new User(id: (int)$row['id_zakaznik'], username: $row['email'], name: $row['meno']);
                     $this->user = $user;
                     $this->session->set('user', $this->user);
+
+                    // --- Sync wishlist from DB and merge with any existing session wishlist ---
+                    try {
+                        // Only sync for real DB-backed users (id present)
+                        if ($user->getId() !== null) {
+                            $uid = (int)$user->getId();
+                            $conn = Connection::getInstance();
+
+                            // Ensure wishlist row exists for this user
+                            $stmtW = $conn->prepare('SELECT id_wishlist FROM wishlist WHERE id_zakaznik = :uid LIMIT 1');
+                            $stmtW->execute([':uid' => $uid]);
+                            $wrow = $stmtW->fetch(\PDO::FETCH_ASSOC);
+                            if ($wrow && isset($wrow['id_wishlist'])) {
+                                $wid = (int)$wrow['id_wishlist'];
+                            } else {
+                                $insW = $conn->prepare('INSERT INTO wishlist (id_zakaznik, title, datum_pridania) VALUES (:uid, :title, NOW())');
+                                $insW->execute([':uid' => $uid, ':title' => 'Moje wishlist']);
+                                $wid = (int)$conn->lastInsertId();
+                            }
+
+                            // Load items from DB wishlist
+                            $stmtItems = $conn->prepare('SELECT id_kniha FROM wishlistKniha WHERE id_wishlist = :wid');
+                            $stmtItems->execute([':wid' => $wid]);
+                            $rowsItems = $stmtItems->fetchAll(\PDO::FETCH_ASSOC);
+                            $dbWishlist = [];
+                            foreach ($rowsItems as $r) {
+                                $dbWishlist[] = (string)$r['id_kniha'];
+                            }
+
+                            // Merge with any session wishlist (preserve session order first)
+                            $sessList = $this->session->get('wishlist', []);
+                            $sessList = array_values(array_unique(array_map('strval', $sessList)));
+                            $merged = array_values(array_unique(array_merge($sessList, $dbWishlist)));
+                            $this->session->set('wishlist', $merged);
+
+                            // Persist any session-only items into DB
+                            foreach ($sessList as $kid) {
+                                if (!in_array($kid, $dbWishlist, true)) {
+                                    try {
+                                        $insItem = $conn->prepare('INSERT INTO wishlistKniha (id_wishlist, id_kniha) VALUES (:wid, :kid)');
+                                        $insItem->execute([':wid' => $wid, ':kid' => $kid]);
+                                    } catch (\Throwable $e) {
+                                        // ignore duplicate or DB errors per existing behavior
+                                    }
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore sync errors to avoid breaking login
+                    }
+                    // --- end wishlist sync ---
+
                     return true;
                 }
                 return false; // password mismatch

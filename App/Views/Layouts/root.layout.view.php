@@ -30,6 +30,8 @@ include __DIR__ . '/../Auth/loginModal.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <script src="<?= $link->asset('js/script.js') ?>"></script>
+    <script src="<?= $link->asset('js/books.js') ?>"></script>
+    <script src="<?= $link->asset('js/wishlist.js') ?>"></script>
 
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -85,7 +87,7 @@ include __DIR__ . '/../Auth/loginModal.php';
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="#">
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
                             <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
                         </a>
                     </li>

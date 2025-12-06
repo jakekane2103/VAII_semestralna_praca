@@ -72,10 +72,17 @@ class BooksController extends BaseController
 
         $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
+        // Get wishlist IDs from session so the view can mark hearts as filled
+        $session = $this->app->getSession();
+        $wishlist = $session->get('wishlist', []);
+        // normalize to string keys for quick lookup
+        $wishlistMap = array_flip(array_map('strval', $wishlist));
+
         return $this->html([
             'books'        => $books,
             'q'            => $q,
             'authorFilter' => $authorFilter,
+            'wishlistMap'  => $wishlistMap,
         ]);
     }
 
