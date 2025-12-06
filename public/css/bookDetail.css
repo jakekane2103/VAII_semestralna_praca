@@ -1,0 +1,85 @@
+/* Page root namespacing */
+.page-book-detail .section-divider {
+    border-bottom: 2px solid #e5e5e5;
+}
+
+.page-book-detail .section-divider:last-of-type {
+    border-bottom: none;
+}
+
+/* Cover image */
+.page-book-detail .book-detail-cover {
+    max-height: 460px;
+    object-fit: contain;
+}
+
+/* Scrollable description if too long */
+.page-book-detail .book-detail-description {
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+/* Meta styling */
+.page-book-detail .book-detail-meta dt {
+    font-weight: 500;
+}
+
+
+/* ===== Prevent the book-detail container/card from being hoverable ===== */
+/* Ensure the card itself doesn't change on hover/focus/active */
+.page-book-detail .book-detail-card,
+.page-book-detail .book-detail-card:hover,
+.page-book-detail .book-detail-card:focus,
+.page-book-detail .book-detail-card:active {
+    transform: none !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05) !important;
+    cursor: default; /* don't show pointer for the card itself */
+}
+
+/* Prevent non-interactive children from changing color or transitioning on hover.
+   Keep anchors and buttons interactive (they will still respond to hover). */
+.page-book-detail .book-detail-card *:not(a):not(button):not(.btn) {
+    color: inherit !important;
+    transition: none !important;
+}
+
+/* Ensure interactive elements still show pointer so users know they are clickable */
+.page-book-detail .book-detail-card a,
+.page-book-detail .book-detail-card button,
+.page-book-detail .book-detail-card .btn {
+    cursor: pointer;
+}
+
+/* Tighter overrides for any commonly targeted elements inside a hovered card */
+.page-book-detail .book-detail-card:hover .card-title,
+.page-book-detail .book-detail-card:hover .card-subtitle,
+.page-book-detail .book-detail-card:hover .book-detail-meta,
+.page-book-detail .book-detail-card:hover .book-detail-description {
+    color: inherit !important;
+    text-decoration: none !important;
+}
+
+/* ===== Button hover/focus rules scoped to the book detail page ===== */
+.page-book-detail .btn-outline-danger:hover,
+.page-book-detail .btn-outline-danger:focus,
+.page-book-detail .btn-outline-danger:active {
+    color: #a71d2a; /* slightly darker red text */
+    background-color: rgba(220,53,69,0.08); /* subtle light red background on hover */
+    border-color: #dc3545;
+    box-shadow: none !important;
+}
+
+.page-book-detail .btn-danger:hover,
+.page-book-detail .btn-danger:focus,
+.page-book-detail .btn-danger:active {
+    background-color: #e4606d; /* lighter red */
+    border-color: #e4606d;
+    box-shadow: none !important;
+}
+
+/* Replace the default blue focus ring with a subtle red-tinted ring for accessibility */
+.page-book-detail .btn:focus {
+    outline: 0 !important;
+    box-shadow: 0 0 0 0.15rem rgba(220,53,69,0.15) !important;
+}

@@ -28,7 +28,7 @@ foreach ($sections as $section):
     ?>
     <h2 class="mb-1 mt-5 carousel-title fs-1"><?= $section['nazov'] ?></h2>
 
-    <div id="<?= $section['id'] ?>" class="carousel slide" data-bs-touch="false" data-bs-ride="carousel">
+    <div id="<?= $section['id'] ?>" class="carousel slide bg-light" data-bs-touch="false" data-bs-ride="carousel">
         <div class="carousel-inner mb-2">
             <?php
             $chunks = array_chunk($books, 4);
