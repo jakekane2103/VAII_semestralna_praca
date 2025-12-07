@@ -24,7 +24,7 @@ include __DIR__ . '/../Auth/loginModal.php';
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="<?= $link->asset('css/styl.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/knihy.css') ?>">
-    <link rel="stylesheet" href="<?= $link->asset('css/kosik.css') ?>">
+    <link rel="stylesheet" href="<?= $link->asset('css/cart.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/bookDetail.css') ?>">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -116,6 +116,7 @@ include __DIR__ . '/../Auth/loginModal.php';
             <label for="mobile-search-input" class="visually-hidden">Hľadať knihy</label>
             <input type="hidden" name="c" value="books">
             <input type="hidden" name="a" value="index">
+            <input id="mobile-search-input" class="form-control me-2 flex-grow-1" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
             <button class="btn btn-success" type="submit">Hľadať</button>
         </form>
     </div>

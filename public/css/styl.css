@@ -239,3 +239,19 @@
 }
 
 /* End of global styles - wishlist styles moved to public/css/wishlist.css */
+
+/* Mobile navbar search tweaks: ensure input is visible and grows to fill space left of the button */
+@media (max-width: 767.98px) {
+    .navbar-search-mobile .form-control {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0; /* allow flex children to shrink correctly inside flex containers */
+        background: #fff;
+        border: 1px solid #ced4da;
+        box-shadow: none;
+    }
+    .navbar-search-mobile .btn {
+        margin-left: .5rem;
+        flex: 0 0 auto;
+    }
+}

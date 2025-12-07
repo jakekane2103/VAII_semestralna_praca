@@ -18,6 +18,13 @@
 
 .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
 
+/* Default thumbnail size for wishlist items */
+.wishlist-thumb img, .wishlist-img {
+    height: 112px;
+    width: auto;
+    object-fit: cover;
+}
+
 .book-card {
     background: #fff;
     border: 1px solid #e6e6e6;
@@ -66,7 +73,8 @@
 
 /* Wishlist row styles for draggable, ranked list */
 .wishlist-rows { display: flex; flex-direction: column; }
-.wishlist-row { align-items: center; cursor: default; }
+/* Desktop: keep rows as horizontal flex items to preserve original desktop layout */
+.wishlist-row { display: flex; align-items: center; cursor: default; }
 .wishlist-row .wishlist-handle { cursor: grab; font-size: 1.2rem; color: #6c757d; }
 .wishlist-row.dragging { opacity: 0.6; }
 .wishlist-row .wishlist-rank { width: 2.2rem; text-align: right; color: #6c757d; }
@@ -74,4 +82,101 @@
 @media (max-width: 576px) {
     .wishlist-row { flex-wrap: wrap; gap: .5rem; }
     .wishlist-row .wishlist-thumb img { height: 56px; }
+}
+@media (max-width: 767.98px) {
+    /* Make the wishlist container full width on mobile for better fit */
+    .wishlist-container { width: 100% !important; max-width: none !important; padding: 0 .5rem !important; }
+
+    /* Convert each wishlist row into a compact 2-row grid:
+       Row 1: img | details | price
+       Row 2: img | controls (spans remaining two columns)
+       Image spans both rows; controls fill the area to the right of image on second row.
+    */
+    .wishlist-row {
+        display: grid !important; /* override utility classes like .d-flex */
+        grid-template-columns: 120px 1fr auto;
+        grid-template-rows: minmax(36px, auto) 56px;
+        grid-template-areas:
+            "img details price"
+            "img controls controls";
+        column-gap: .5rem;
+        row-gap: .25rem;
+        align-items: stretch;
+        padding: .25rem .5rem; /* compact */
+    }
+
+    /* Hide handle and rank on mobile to simplify layout */
+    .wishlist-handle, .wishlist-rank { display: none; }
+
+    /* Strongly ensure thumbnail spans both rows and fills the area on mobile */
+    .wishlist-row > .wishlist-thumb {
+        grid-area: img !important;
+        grid-row: 1 / span 2 !important;
+        display: block !important;
+        align-self: stretch !important;
+        height: 100% !important;
+        margin-inline-end: 0 !important; /* cancel .me-3 on mobile (RTL-safe) */
+    }
+
+    .wishlist-row > .wishlist-thumb img, .wishlist-img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+    }
+
+    /* Thumbnail: place into img area and span both rows */
+    .wishlist-thumb { grid-area: img; display: block; grid-row: 1 / span 2; height: 100%; align-self: stretch; margin-inline-end: .5rem; }
+    .wishlist-thumb img, .wishlist-img { width: 120px; height: 100%; object-fit: cover; display: block; border-radius: .25rem; }
+
+    /* Title / author area: ensure it aligns vertically with price */
+    .wishlist-row .flex-grow-1 {
+        grid-area: details;
+        min-width: 0;
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* vertically center title/author so price stays on same row */
+        overflow: hidden; /* ensure long content truncates instead of pushing price down */
+    }
+    /* Truncate long titles on mobile to 12 characters with ellipsis */
+    .wishlist-title {
+        display: block;
+        max-width: 100%; /* use available column space, but overflow is hidden by parent */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.95rem;
+        line-height: 1.1;
+    }
+    .wishlist-row .flex-grow-1 .small, .wishlist-row .flex-grow-1 .text-muted { display: block; font-size: 0.85rem; margin-top: 2px; }
+
+    /* Price on the first row, right aligned and vertically centered */
+    .wishlist-row .me-3.text-end { grid-area: price; justify-self: end; align-self: center; min-width: 72px; font-size: 0.95rem; }
+
+    /* Buttons on the second row: occupy the controls area to the right of the image and fill it */
+    .wishlist-row > .d-flex.gap-1 { grid-area: controls; justify-self: stretch; width: 100%; display: flex; gap: .4rem; height: 48px; align-items: center; }
+    .wishlist-row > .d-flex.gap-1 form { flex: 1 1 0; }
+    .wishlist-row > .d-flex.gap-1 button { width: 100%; height: calc(100% - 8px); padding: .35rem .5rem; font-size: 0.85rem; }
+
+    /* Make the 'Odstrániť' (remove) button compact and the 'Presunúť do košíka' (move) button expand.
+       We target the buttons inside the controls container so desktop styles elsewhere remain unchanged.
+    */
+    .wishlist-row > .d-flex.gap-1 .btn-wishlist-remove {
+        flex: 0 0 36px; /* even smaller square button */
+        padding: .18rem .28rem;
+        font-size: 0.72rem;
+        height: calc(100% - 8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .wishlist-row > .d-flex.gap-1 .btn-wishlist-move {
+        flex: 1 1 0; /* take remaining space */
+        min-width: 180px; /* increase so the full label comfortably fits */
+    }
+
+    /* If the move-to-cart button is inside a form or anchor, make sure it stretches */
+    .wishlist-row > .d-flex.gap-1 form .btn-wishlist-move { width: 100%; }
 }

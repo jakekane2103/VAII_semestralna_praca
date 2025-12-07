@@ -1,0 +1,67 @@
+body {
+    background-color: #ffffff;
+}
+
+.cart-item {
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.cart-img {
+    width: 80px;
+    height: 100px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.cart-details h5 {
+    margin-bottom: 0;
+}
+
+.cart-price {
+    min-width: 80px;
+}
+
+/* Cart responsive tweaks (scoped to this view) */
+.cart-item { gap: 1rem; }
+.cart-img { width: 84px; height: 112px; object-fit: cover; border-radius: .25rem; }
+.cart-details { min-width: 0; }
+.cart-price { min-width: 80px; }
+
+/* Mobile: make cart full-width and rearrange items into two visual rows: */
+@media (max-width: 767.98px) {
+    .container.my-5.w-50 { width: 100% !important; padding: 1rem !important; }
+
+    /* Use CSS Grid on mobile to enforce two rows
+       Row 1: img | details | price
+       Row 2: (empty) | controls(centered) | remove(right)
+    */
+    .cart-item {
+        display: grid !important;
+        grid-template-columns: 96px 1fr auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "img details price"
+            ". controls remove";
+        column-gap: .75rem;
+        row-gap: .5rem;
+        align-items: stretch; /* allow image cell to stretch vertically */
+    }
+
+    /* Place the anchor (image wrapper) and image into the img area */
+    /* Make the image span both rows so it visually stretches along the item */
+    .cart-item > a { grid-area: img; display: block; grid-row: 1 / span 2; height: 100%; }
+    .cart-item img.cart-img { width: 96px; height: 100%; object-fit: cover; grid-area: img; grid-row: 1 / span 2; align-self: stretch; border-radius: .25rem; display: block; }
+
+    .cart-details { grid-area: details; min-width: 0; }
+    .cart-price { grid-area: price; justify-self: end; }
+
+    /* Controls centered in the second row */
+    .cart-item > .d-flex.align-items-center.me-3.gap-1 { grid-area: controls; justify-self: center; display: flex; gap: .5rem; }
+
+    /* Remove button anchored to the right on the second row */
+    .cart-item form.m-0:last-of-type { grid-area: remove; justify-self: end; align-self: center; display: inline-flex; margin-left: .5rem; }
+
+    .cart-item .btn { padding: .375rem .5rem; font-size: .9rem; }
+    .form-control.form-control-sm { width: 60px; }
+}

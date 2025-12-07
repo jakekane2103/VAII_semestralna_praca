@@ -20,13 +20,13 @@ $total = 0;
                 ?>
                 <div class="col-12">
                     <div class="card cart-item border-0 shadow-sm p-3 d-flex flex-row align-items-center">
-                        <a href="<?= $detailUrl ?>" class="d-inline-block">
-                            <img src="<?= $link->asset($item['obrazok']) ?>"
-                                 alt="<?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>"
+                         <a href="<?= $detailUrl ?>" class="d-inline-block">
+                             <img src="<?= $link->asset($item['obrazok']) ?>"
+                                  alt="<?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>"
                                  class="cart-img me-3">
-                        </a>
+                         </a>
 
-                        <div class="cart-details flex-grow-1">
+                         <div class="cart-details flex-grow-1">
                             <h5 class="mb-1">
                                 <a href="<?= $detailUrl ?>" class="text-decoration-none text-dark">
                                     <?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>

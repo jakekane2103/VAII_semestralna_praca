@@ -10,14 +10,14 @@
         <div class="wishlist-container">
             <h1 class="mb-4">My Wishlist</h1>
 
-            <?php if (empty($items)): ?>
+            <?php if (empty($items)) { ?>
                 <div class="empty-state">
                     <p>Your wishlist is empty.</p>
                 </div>
-            <?php else: ?>
+            <?php } else { ?>
                 <!-- Rows list for drag & drop ordering -->
                 <div id="wishlist-grid" class="wishlist-rows" aria-live="polite">
-                    <?php foreach ($items as $item):
+                    <?php foreach ($items as $item) {
                         $id = htmlspecialchars($item['id'] ?? $item['id_kniha'] ?? '', ENT_QUOTES, 'UTF-8');
                         $title = htmlspecialchars($item['nazov'] ?? $item['nazev'] ?? $item['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8');
                         $author = htmlspecialchars($item['autor'] ?? $item['author'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -30,11 +30,11 @@
                         <div class="wishlist-handle me-3" title="Potiahni pre zmenu poradia" aria-hidden="true">☰</div>
                         <div class="wishlist-rank me-2">&nbsp;</div>
                         <a class="wishlist-thumb me-3 d-block" href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>">
-                            <img src="<?= htmlspecialchars($cover, ENT_QUOTES, 'UTF-8') ?>" alt="<?= $title ?>" class="img-fluid" style="height:72px;width:auto;object-fit:cover;border-radius:.25rem;"/>
+                            <img src="<?= htmlspecialchars($cover, ENT_QUOTES, 'UTF-8') ?>" alt="<?= $title ?>" class="wishlist-img" />
                         </a>
 
                         <div class="flex-grow-1">
-                            <a class="fw-bold text-decoration-none text-dark fs-5" href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>"><?= $title ?></a>
+                            <a class="fw-bold wishlist-title text-decoration-none text-dark fs-5" href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>"><?= $title ?></a>
                             <?php if ($author): ?><div class="text-muted small fs-6"><?= $author ?></div><?php endif; ?>
                         </div>
 
@@ -58,9 +58,9 @@
                             </form>
                         </div>
                     </div>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
         </div>
     </div>
 </div>
