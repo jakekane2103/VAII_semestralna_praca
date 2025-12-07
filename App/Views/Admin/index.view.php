@@ -10,8 +10,7 @@
     <div class="row mb-4">
         <div class="col">
             <h2>Admin panel</h2>
-            <p class="text-muted mb-1">Welcome, <strong><?= htmlspecialchars($auth->user->name ?? 'Admin', ENT_QUOTES, 'UTF-8') ?></strong>.</p>
-            <p class="text-muted">Manage books: add new titles, update existing ones or remove them.</p>
+            <p class="text-muted"><?= htmlspecialchars($welcome ?? 'Správa kníh: pridávajte nové tituly, aktualizujte existujúce alebo ich odstraňujte.', ENT_QUOTES, 'UTF-8') ?></p>
         </div>
     </div>
 
@@ -164,10 +163,6 @@
                         </div>
                         <button type="submit" class="btn btn-danger w-100">Odstrániť knihu</button>
                     </form>
-
-                    <hr>
-                    <p class="small text-muted mb-1">Tip: Zoznam ID kníh nájdeš v prehľade kníh. Klikni na riadok, aby sa údaje naplnili do formulára.</p>
-                    <a href="<?= $link->url('Books.index') ?>" class="small">Otvoriť stránku s knihami</a>
                 </div>
             </div>
         </div>
@@ -175,34 +170,5 @@
 </div>
 
 <script>
-    // When an admin clicks a row in the books table, populate the update/delete forms for convenience.
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.admin-book-row').forEach(function (row) {
-            row.addEventListener('click', function () {
-                var id = this.dataset.id || '';
-                var nazov = this.dataset.nazov || '';
-                var autor = this.dataset.autor || '';
-                var cena = this.dataset.cena || '';
-                var obrazok = this.dataset.obrazok || '';
 
-                var updateId = document.getElementById('update-id');
-                var updateNazov = document.getElementById('update-nazov');
-                var updateAutor = document.getElementById('update-autor');
-                var updateCena = document.getElementById('update-cena');
-                var updateObrazok = document.getElementById('update-obrazok');
-                var deleteId = document.getElementById('delete-id');
-
-                if (updateId) updateId.value = id;
-                if (updateNazov) updateNazov.value = nazov;
-                if (updateAutor) updateAutor.value = autor;
-                if (updateCena) updateCena.value = cena;
-                if (updateObrazok) updateObrazok.value = obrazok;
-                if (deleteId) deleteId.value = id;
-
-                // scroll to update form (small UX improvement)
-                var updateForm = document.getElementById('admin-update-form');
-                if (updateForm) updateForm.scrollIntoView({behavior: 'smooth', block: 'center'});
-            });
-        });
-    });
 </script>

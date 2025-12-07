@@ -2,16 +2,14 @@ body {
     background-color: #ffffff;
 }
 
+.container.my-5.w-50 {
+    width: 70% !important;
+    padding: 1rem !important;
+}
+
 .cart-item {
     background-color: #fff;
     border-radius: 8px;
-}
-
-.cart-img {
-    width: 80px;
-    height: 100px;
-    object-fit: contain;
-    border-radius: 4px;
 }
 
 .cart-details h5 {
@@ -24,7 +22,7 @@ body {
 
 /* Cart responsive tweaks (scoped to this view) */
 .cart-item { gap: 1rem; }
-.cart-img { width: 84px; height: 112px; object-fit: cover; border-radius: .25rem; }
+.cart-img { width: 84px; height: 128px; object-fit: cover; border-radius: .25rem; }
 .cart-details { min-width: 0; }
 .cart-price { min-width: 80px; }
 

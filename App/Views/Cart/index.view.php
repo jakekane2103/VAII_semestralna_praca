@@ -28,11 +28,11 @@ $total = 0;
 
                          <div class="cart-details flex-grow-1">
                             <h5 class="mb-1">
-                                <a href="<?= $detailUrl ?>" class="text-decoration-none text-dark">
+                                <a href="<?= $detailUrl ?>" class="text-decoration-none text-dark fs-5 fw-bold">
                                     <?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>
                                 </a>
                             </h5>
-                            <small class="text-muted"><?= htmlspecialchars($item['autor'], ENT_QUOTES, 'UTF-8') ?></small>
+                            <small class="text-muted fs-6"><?= htmlspecialchars($item['autor'], ENT_QUOTES, 'UTF-8') ?></small>
                         </div>
 
                         <div class="d-flex align-items-center me-3 gap-1">

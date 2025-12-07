@@ -8,7 +8,7 @@
 <div class="container-fluid">
     <div class="site-bg-light">
         <div class="wishlist-container">
-            <h1 class="mb-4">My Wishlist</h1>
+            <h2 class="mb-4">Môj Wishlist</h2>
 
             <?php if (empty($items)) { ?>
                 <div class="empty-state">
@@ -69,4 +69,4 @@
     // Provide reorder endpoint to wishlist.js
     window.WISHLIST_REORDER_URL = <?= json_encode($link->url('Wishlist.reorder')) ?>;
 </script>
-<script src="<?= $link->asset('js/wishlist.js') ?>"></script>
+<!-- wishlist.js removed - wishlist behavior is now included in public/js/cart.js -->

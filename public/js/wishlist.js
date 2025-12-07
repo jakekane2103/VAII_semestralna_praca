@@ -1,7 +1,17 @@
+// File: public/js/wishlist.js
+// Purpose: Provide client-side wishlist interactions: add/remove via AJAX, optimistic UI for hearts,
+// drag & drop reordering, and sending new order to the server.
+// All functions below are used by event handlers in this file.
 (function () {
-    // Keep this file lightweight and defensive for older browsers
+    // Defensive guard: if fetch is unavailable, bail out (older browsers)
+    // Used: run immediately to avoid errors when fetch not present.
     if (!window.fetch) return;
 
+    // postForm
+    // Purpose: Send multipart/form-data POST (FormData) and return parsed JSON or a success object.
+    // Input: url string, fd FormData
+    // Output: Promise resolving to JSON object or { success: true }
+    // Used: by handleAction and handleHeartClick to perform form-like POSTs.
     function postForm(url, fd) {
         return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
             .then(function (r) {
@@ -10,6 +20,11 @@
             });
     }
 
+    // postJson
+    // Purpose: Send JSON POST to server and parse JSON response.
+    // Input: url string, obj - object to send
+    // Output: Promise resolving to parsed JSON
+    // Used: by sendOrderToServer to post reorder payload.
     function postJson(url, obj) {
         return fetch(url, {
             method: 'POST',
@@ -22,6 +37,11 @@
         });
     }
 
+    // handleAction
+    // Purpose: Generic handler for forms on the wishlist grid (move/remove actions).
+    // - Prevents default, builds FormData, posts via postForm and on success calls onSuccess callback.
+    // Input: event, url string, onSuccess callback(id, data)
+    // Used: attached to remove/move forms inside DOMContentLoaded block below.
     function handleAction(e, url, onSuccess) {
         e.preventDefault();
         var form = e.currentTarget;
@@ -40,6 +60,11 @@
             });
     }
 
+    // handleHeartClick
+    // Purpose: Toggle wishlist "heart" button optimistically and call server to persist.
+    // - Updates classes and aria-pressed immediately, sends POST via postForm, and reverts UI on error.
+    // Input: click event on button with data-book-id
+    // Used: bound to .btn-wishlist buttons in DOMContentLoaded block below.
     function handleHeartClick(e) {
         e.preventDefault();
         var btn = e.currentTarget;
@@ -98,11 +123,19 @@
             });
     }
 
-    // Drag & Drop reorder helpers
+    // enableDragToReorder
+    // Purpose: Add drag & drop support to a wishlist container so users can reorder rows.
+    // - Attaches dragstart/dragover/dragend handlers to child .wishlist-row elements.
+    // - On drag end it calls sendOrderToServer to persist the new order.
+    // Input: container DOM element, reorderUrl string
+    // Used: called in DOMContentLoaded block when wishlist grid exists.
     function enableDragToReorder(container, reorderUrl) {
         if (!container || !reorderUrl) return;
         var dragSrcEl = null;
 
+        // handleDragStart
+        // Purpose: Store the element being dragged, add dragging class, set dataTransfer.
+        // Used by browser drag lifecycle.
         function handleDragStart(e) {
             this.classList.add('dragging');
             dragSrcEl = this;
@@ -110,6 +143,11 @@
             try { e.dataTransfer.setData('text/plain', this.dataset.id); } catch (err) { /* IE fallback ignore */ }
         }
 
+        // handleDragOver
+        // Purpose: Manage DOM reorder as the dragged item moves over targets.
+        // - Inserts dragged element before/after target based on mouse Y position.
+        // - Calls updateRanks to refresh display order numbers.
+        // Used by browser drag lifecycle.
         function handleDragOver(e) {
             if (e.preventDefault) e.preventDefault(); // Allows drop
             e.dataTransfer.dropEffect = 'move';
@@ -127,12 +165,18 @@
             return false;
         }
 
-        function handleDragEnd(e) {
+        // handleDragEnd
+        // Purpose: Clean up dragging class and trigger server update of order.
+        // Used by browser drag lifecycle.
+        function handleDragEnd() {
             this.classList.remove('dragging');
             // After drag end, push order to server
             sendOrderToServer(container, reorderUrl);
         }
 
+        // addDnDHandlers
+        // Purpose: Attach drag event listeners to a single item.
+        // Used by enableDragToReorder to initialize existing rows.
         function addDnDHandlers(item) {
             item.setAttribute('draggable', 'true');
             item.addEventListener('dragstart', handleDragStart, false);
@@ -145,6 +189,10 @@
         items.forEach(function (it) { addDnDHandlers(it); });
     }
 
+    // updateRanks
+    // Purpose: Update displayed rank numbers (1., 2., ...) inside .wishlist-row elements.
+    // Input: container DOM element
+    // Used: called after reorder operations and on initial load to display indices.
     function updateRanks(container) {
         var rows = container.querySelectorAll('.wishlist-row');
         rows.forEach(function (row, idx) {
@@ -153,6 +201,12 @@
         });
     }
 
+    // sendOrderToServer
+    // Purpose: Collect current row order and POST to server via postJson.
+    // - Shows a saving state on the container while the request is in-flight.
+    // - On success, optionally reorders DOM to server-authoritative order.
+    // Input: container DOM element, reorderUrl string
+    // Used: called by handleDragEnd inside enableDragToReorder.
     function sendOrderToServer(container, reorderUrl) {
         var rows = container.querySelectorAll('.wishlist-row');
         var order = [];
@@ -185,6 +239,9 @@
             });
     }
 
+    // DOMContentLoaded: wire up forms, heart buttons and drag & drop
+    // Purpose: Attach event listeners to wishlist forms (move/remove), heart buttons, and initialize DnD.
+    // Used: executes on DOM ready to set up all behaviors declared above.
     document.addEventListener('DOMContentLoaded', function () {
         // Existing wishlist page forms: move/remove
         var forms = document.querySelectorAll('#wishlist-grid form');

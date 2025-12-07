@@ -23,16 +23,14 @@ include __DIR__ . '/../Auth/loginModal.php';
             integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="<?= $link->asset('css/styl.css') ?>">
-    <link rel="stylesheet" href="<?= $link->asset('css/knihy.css') ?>">
+    <link rel="stylesheet" href="<?= $link->asset('css/books.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/cart.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/bookDetail.css') ?>">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <script src="<?= $link->asset('js/script.js') ?>"></script>
-    <script src="<?= $link->asset('js/books.js') ?>"></script>
-    <script src="<?= $link->asset('js/wishlist.js') ?>"></script>
-
+    <script src="<?= $link->asset('js/auth.js') ?>"></script>
+    <script src="<?= $link->asset('js/cart.js') ?>"></script>
+    <script src="<?= $link->asset('js/admin.js') ?>"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-md">

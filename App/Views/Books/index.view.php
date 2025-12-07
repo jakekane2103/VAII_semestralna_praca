@@ -84,8 +84,8 @@
                                               data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                             <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
                                             <input type="hidden" name="qty" value="1">
-                                            <button type="submit" class="btn btn-primary">Do košíka</button>
-                                        </form>
+                                            <button type="submit" class="btn btn-primary"><span class="btn-label">Do košíka</span></button>
+                                         </form>
                                     </div>
                                 </div>
                             </div>
@@ -131,7 +131,7 @@
                 <div id="addToCartModalTotal" class="fw-bold fs-4"></div>
               </div>
               <div class="d-flex gap-2">
-                <button type="button" id="addToCartModalEdit" class="btn btn-outline-secondary">Pokračovať v nákupe</button>
+                <button type="button" id="addToCartModalEdit" class="btn btn-outline-secondary" data-bs-dismiss="modal">Pokračovať v nákupe</button>
                 <button type="button" id="addToCartModalCheckout" class="btn btn-danger">Košík</button>
               </div>
             </div>
@@ -141,13 +141,8 @@
     </div>
 
     <script>
+      // Variables used by the global cart/wishlist JS (loaded from layout as cart.js)
       window.BOOKS_CART_URL = <?= json_encode($link->url('Cart.index')) ?>;
+      window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
     </script>
-    <script src="<?= $link->asset('js/books.js') ?>"></script>
-
-    <script>
-        // URL used by wishlist.js to add items to wishlist via AJAX
-        window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
-    </script>
-    <script src="<?= $link->asset('js/wishlist.js') ?>"></script>
 </div>

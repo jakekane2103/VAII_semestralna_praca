@@ -133,34 +133,53 @@ class AuthController extends BaseController
         // Check for existing email
         try {
             $conn = \Framework\DB\Connection::getInstance();
+
+            // Normalize email for uniqueness checks (case-insensitive)
+            $email = mb_strtolower($email);
+
+            // Leaner existence check: fetch at most one row
             $check = $conn->prepare('SELECT id_zakaznik FROM zakaznik WHERE email = :email LIMIT 1');
             $check->execute([':email' => $email]);
-            $exists = $check->fetchAll(\PDO::FETCH_ASSOC);
-            if (!empty($exists)) {
+            $exists = $check->fetch(\PDO::FETCH_ASSOC);
+            if ($exists) {
                 $message = 'E-mail už existuje. Ak máte účet, prihláste sa.';
                 return $this->html(['message' => $message], 'signUp');
             }
 
-            // Hash password and insert
+            // Hash password and attempt insert. If a concurrent insert created the same email,
+            // the database unique constraint (recommended) will cause an exception that we catch below.
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $username = $email; // use email as username by default
 
-            $insert = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
-            $ok = $insert->execute([
-                ':uname' => $username,
-                ':meno' => $meno,
-                ':priezvisko' => $priezvisko,
-                ':email' => $email,
-                ':heslo' => $hash
-            ]);
+            try {
+                $insert = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
+                $ok = $insert->execute([
+                    ':uname' => $username,
+                    ':meno' => $meno,
+                    ':priezvisko' => $priezvisko,
+                    ':email' => $email,
+                    ':heslo' => $hash
+                ]);
 
-            if ($ok) {
-                // Redirect to login page after registration
-                return $this->redirect($this->url('auth.login'));
+                if ($ok) {
+                    // Redirect to login page after registration
+                    return $this->redirect($this->url('auth.login'));
+                }
+
+                $message = 'Registrácia zlyhala. Skúste to neskôr.';
+                return $this->html(['message' => $message], 'signUp');
+            } catch (\PDOException $e) {
+                // Look for SQLSTATE codes that indicate unique constraint violation.
+                // Common codes: '23000' (MySQL), '23505' (Postgres).
+                $sqlState = isset($e->errorInfo[0]) ? $e->errorInfo[0] : $e->getCode();
+                if (in_array($sqlState, ['23000', '23505'], true)) {
+                    $message = 'E-mail už existuje. Ak máte účet, prihláste sa.';
+                    return $this->html(['message' => $message], 'signUp');
+                }
+                // Other DB errors
+                $message = 'Chyba pri ukladaní do databázy: ' . $e->getMessage();
+                return $this->html(['message' => $message], 'signUp');
             }
-
-            $message = 'Registrácia zlyhala. Skúste to neskôr.';
-            return $this->html(['message' => $message], 'signUp');
 
         } catch (\Exception $e) {
             $message = 'Chyba pri ukladaní do databázy: ' . $e->getMessage();
