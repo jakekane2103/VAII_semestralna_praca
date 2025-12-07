@@ -180,7 +180,9 @@ include __DIR__ . '/../Auth/loginModal.php';
                 <h5>Newsletter</h5>
                 <p>Prihláste sa na odber a neujdú vám žiadne knižné novinky.</p>
                 <form class="d-flex" action="#" method="post">
-                    <input type="email" class="form-control me-2" placeholder="Váš e-mail" required>
+                    <label>
+                        <input type="email" class="form-control me-2" placeholder="Váš e-mail" required>
+                    </label>
                     <button type="submit" class="btn btn-primary">Prihlásiť</button>
                 </form>
             </div>
