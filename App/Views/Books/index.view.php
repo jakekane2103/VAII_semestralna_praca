@@ -69,9 +69,7 @@
                                             <input type="hidden" name="id" value="<?= $bookId ?>">
                                             <button type="submit" role="button" class="<?= $btnClass ?> btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
                                                     data-book-id="<?= $bookId ?>" aria-pressed="<?= $ariaPressed ?>">
-                                                <svg width="18" height="18" fill="currentColor" class="bi bi-heart heart-icon" viewBox="0 0 16 16">
-                                                     <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385C3.12 10.286 8 13 8 13s4.88-2.714 6.286-5.562c.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"></path>
-                                                </svg>
+                                                <img src="<?= $link->asset('images/wishlistIcon.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
                                                 <span class="visually-hidden">Pridať do wishlistu</span>
                                             </button>
                                         </form>
@@ -84,7 +82,10 @@
                                               data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                             <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
                                             <input type="hidden" name="qty" value="1">
-                                            <button type="submit" class="btn btn-primary"><span class="btn-label">Do košíka</span></button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                                <span class="visually-hidden btn-label">Do košíka</span>
+                                            </button>
                                          </form>
                                     </div>
                                 </div>

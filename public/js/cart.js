@@ -13,6 +13,14 @@
       return;
     }
 
+    // Mark known add-to-cart buttons so broader fallbacks won't touch other buttons (wishlist hearts, etc.)
+    forms.forEach(function(f){
+      try {
+        var sb = f.querySelector('button[type="submit"]');
+        if (sb && sb.dataset) sb.dataset.addToCart = '1';
+      } catch(e) { /* ignore */ }
+    });
+
     const modalImg = document.getElementById('addToCartModalImg');
     const modalTitle = document.getElementById('addToCartModalTitle');
     const modalAuthor = document.getElementById('addToCartModalAuthor');
@@ -35,10 +43,50 @@
     function normalizeForMatch(s) {
       if (!s) return '';
       try {
-        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return s.normalize('NFD').replace(/([\u0300-\u036f])/g, '').toLowerCase();
       } catch (e) {
         return (s || '').toLowerCase();
       }
+    }
+
+    // Prevent layout shift when modal is shown by reserving scrollbar space
+    function getScrollbarWidth() {
+      return window.innerWidth - document.documentElement.clientWidth;
+    }
+    function applyModalBodyPadding() {
+      try {
+        var w = getScrollbarWidth();
+        if (w > 0) {
+          // only set if not already set and the computed padding-right is essentially zero
+          if (!document.body.dataset._modalPaddingApplied) {
+            var currentPadding = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+            // if there's already non-trivial right padding (e.g. Bootstrap already compensated), don't add
+            if (currentPadding < 0.5) {
+              // store original paddings so we can restore later
+              try { document.documentElement.dataset._origPaddingRight = document.documentElement.style.paddingRight || ''; } catch(e) {}
+              try { document.body.dataset._origPaddingRight = document.body.style.paddingRight || ''; } catch(e) {}
+              // apply padding to both html and body to cover layouts that use 100vw or similar
+              document.documentElement.style.paddingRight = (parseFloat(getComputedStyle(document.documentElement).paddingRight) || 0) + w + 'px';
+              document.body.style.paddingRight = currentPadding + w + 'px';
+              document.body.dataset._modalPaddingApplied = String(w);
+              document.documentElement.dataset._modalPaddingApplied = String(w);
+            }
+            // otherwise leave existing padding in place (don't mark dataset so removeModalBodyPadding won't subtract)
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+    function removeModalBodyPadding() {
+      try {
+        if (document.body.dataset && document.body.dataset._modalPaddingApplied) {
+          // remove the extra padding we added
+          var added = parseFloat(document.body.dataset._modalPaddingApplied) || 0;
+          var current = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+          var original = Math.max(0, current - added);
+          document.body.style.paddingRight = original ? original + 'px' : '';
+          delete document.body.dataset._modalPaddingApplied;
+        }
+      } catch (e) { /* ignore */ }
     }
 
     // Keep reference to last submit button and a safety timeout to ensure cleanup
@@ -50,6 +98,9 @@
       try { if (bootstrapModal && typeof bootstrapModal.hide === 'function') bootstrapModal.hide(); } catch (e) {}
       document.querySelectorAll('.modal-backdrop').forEach(function(el){ el.parentNode && el.parentNode.removeChild(el); });
       document.body && document.body.classList && document.body.classList.remove('modal-open');
+
+      // Remove any modal padding we applied to avoid a persistent layout change
+      removeModalBodyPadding();
 
       // Restore add-to-cart buttons
       var addBtns = document.querySelectorAll('form.js-add-to-cart button[type="submit"]');
@@ -100,7 +151,8 @@
 
       // Broader fallback across all buttons
       try {
-        var allButtons = document.querySelectorAll('button');
+        // Only inspect buttons previously marked as add-to-cart to avoid touching wishlist or other unrelated buttons
+        var allButtons = document.querySelectorAll('button[data-add-to-cart]');
         allButtons.forEach(function(btn){
           try {
             var lblEl = btn.querySelector && btn.querySelector('.btn-label') ? btn.querySelector('.btn-label') : null;
@@ -215,6 +267,8 @@
 
     if (modalEl) {
       try {
+        // When modal shows, reserve scrollbar width as body padding to avoid layout shift
+        modalEl.addEventListener('show.bs.modal', function () { applyModalBodyPadding(); });
         modalEl.addEventListener('hidden.bs.modal', function () { cleanupAfterModal(); });
         modalEl.addEventListener('hide.bs.modal', function () { cleanupAfterModal(); });
         modalEl.addEventListener('click', function(e){ try { if (e.target && e.target.closest && e.target.closest('[data-bs-dismiss]')) cleanupAfterModal(); } catch(err){} });
@@ -265,11 +319,9 @@
         var url = window.WISHLIST_ADD_URL || (document.body && document.body.dataset && document.body.dataset.wishlistAddUrl) || '/wishlist/add';
         var fd = new FormData(); fd.append('id', bookId);
 
-        var wasOutline = btn.classList.contains('btn-outline-danger');
-        var wasPressed = btn.getAttribute('aria-pressed') === 'true';
-
-        if (wasOutline) { btn.classList.remove('btn-outline-danger'); btn.classList.add('btn-danger'); btn.setAttribute('aria-pressed', 'true'); }
-        else { btn.classList.remove('btn-danger'); btn.classList.add('btn-outline-danger'); btn.setAttribute('aria-pressed', 'false'); }
+        // Do not toggle CSS classes; keep appearance identical to cart button.
+        // Blur immediately to avoid sticky hover/focus styles.
+        try { btn.blur(); } catch (e) {}
 
         postForm(url, fd)
             .then(function (data) {
@@ -283,10 +335,9 @@
             })
             .catch(function (err) {
                 console.error(err);
-                if (wasOutline) { btn.classList.remove('btn-danger'); btn.classList.add('btn-outline-danger'); btn.setAttribute('aria-pressed', wasPressed ? 'true' : 'false'); }
-                else { btn.classList.remove('btn-outline-danger'); btn.classList.add('btn-danger'); btn.setAttribute('aria-pressed', wasPressed ? 'true' : 'false'); }
                 try { alert('Neúspech pri pridávaní do wishlistu. Skúste znova.'); } catch (e) {}
-            });
+            })
+            .finally(function(){ try { btn.blur(); } catch (e) {} });
     }
 
     function enableDragToReorder(container, reorderUrl) {
@@ -323,5 +374,4 @@
         var reorderUrl = window.WISHLIST_REORDER_URL || (document.body && document.body.dataset && document.body.dataset.wishlistReorderUrl) || '/wishlist/reorder';
         if (wishlistGrid) { enableDragToReorder(wishlistGrid, reorderUrl); updateRanks(wishlistGrid); }
     });
-})();
-
+    })();

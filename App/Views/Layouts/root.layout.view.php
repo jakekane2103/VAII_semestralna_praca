@@ -30,6 +30,7 @@ include __DIR__ . '/../Auth/loginModal.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="<?= $link->asset('js/auth.js') ?>"></script>
     <script src="<?= $link->asset('js/cart.js') ?>"></script>
+    <script src="<?= $link->asset('js/books.js') ?>"></script>
     <script src="<?= $link->asset('js/admin.js') ?>"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">

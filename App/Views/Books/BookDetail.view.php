@@ -1,6 +1,7 @@
 <?php
 /** @var \Framework\Support\LinkGenerator $link */
 /** @var array $book */
+/** @var bool|null $inWishlist */
 ?>
 
 <div class="page-book-detail bg-light min-vh-100">
@@ -79,11 +80,28 @@
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
+                            <?php
+                            $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '';
+                            $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
+                            $isIn = !empty($inWishlist);
+                            ?>
+                            <!-- Wishlist button, same CSS as cart and to its left -->
+                            <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
+                                <input type="hidden" name="id" value="<?= $bookId ?>">
+                                <button type="submit" role="button" class="btn btn-primary px-4 btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
+                                        data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>">
+                                    <img src="<?= $link->asset('images/wishlistIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                    <span class="visually-hidden">Pridať do wishlistu</span>
+                                </button>
+                            </form>
+
                             <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0">
-                                <input type="hidden" name="id"
-                                       value="<?= htmlspecialchars($book['id'] ?? $book['ISBN'] ?? $book['nazov'], ENT_QUOTES, 'UTF-8') ?>">
+                                <input type="hidden" name="id" value="<?= $bookId ?>">
                                 <input type="hidden" name="qty" value="1">
-                                <button type="submit" class="btn btn-primary px-4">Do košíka</button>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                    <span class="visually-hidden btn-label">Do košíka</span>
+                                </button>
                             </form>
 
                         </div>
@@ -94,3 +112,6 @@
     </div>
 </div>
 
+<script>
+  window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
+</script>

@@ -49,7 +49,7 @@ foreach ($sections as $section):
                                                 <p class="card-subtitle text-muted mb-0"><?= htmlspecialchars($book['autor'], ENT_QUOTES) ?></p>
                                             </div>
                                             <div class="card-footer bg-transparent border-0">
-                                                <strong class="book-price"><?= htmlspecialchars($book['cena'], ENT_QUOTES) ?></strong>
+                                                <strong class="book-price"><?= htmlspecialchars($book['cena'], ENT_QUOTES) ?> €</strong>
                                             </div>
                                         </div>
                                     </a>

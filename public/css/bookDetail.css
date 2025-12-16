@@ -83,3 +83,15 @@
     outline: 0 !important;
     box-shadow: 0 0 0 0.15rem rgba(220,53,69,0.15) !important;
 }
+
+/* Use vanilla/global hover for the wishlist heart (avoid page-specific hover tweaks) */
+.page-book-detail .btn-wishlist.btn-outline-danger:hover,
+.page-book-detail .btn-wishlist.btn-outline-danger:focus,
+.page-book-detail .btn-wishlist.btn-danger:hover,
+.page-book-detail .btn-wishlist.btn-danger:focus {
+    background-color: #ff4d4d; /* match styl.css hover */
+    border-color: #ff4d4d;     /* match styl.css hover */
+    color: #fff;
+    box-shadow: none !important;
+    transition: 0.25s;
+}

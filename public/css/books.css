@@ -90,3 +90,23 @@ html, body {
 .authorFoundBooks p {
     margin-bottom: 0.25rem;
 }
+
+.wishlist-icon-white {
+    height: 25px;
+    display: inline-block;
+    /* Convert icon to white for PNG images: invert then brighten */
+    filter: invert(1) brightness(1.2) saturate(0);
+    -webkit-filter: invert(1) brightness(1.2) saturate(0);
+    /* keep aspect/fitting behavior */
+    object-fit: contain;
+}
+
+.btn-cart-icon {
+    height: 25px;
+    display: inline-block;
+    /* Convert icon to white for PNG images: invert then brighten */
+    filter: invert(1) brightness(1.2) saturate(0);
+    -webkit-filter: invert(1) brightness(1.2) saturate(0);
+    /* keep aspect/fitting behavior */
+    object-fit: contain;
+}

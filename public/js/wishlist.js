@@ -3,6 +3,10 @@
 // drag & drop reordering, and sending new order to the server.
 // All functions below are used by event handlers in this file.
 (function () {
+    // Avoid double-init if this script was already loaded or if cart.js included the same module
+    if (window.__wishlist_loaded) return;
+    window.__wishlist_loaded = true;
+
     // Defensive guard: if fetch is unavailable, bail out (older browsers)
     // Used: run immediately to avoid errors when fetch not present.
     if (!window.fetch) return;
@@ -75,20 +79,9 @@
         var fd = new FormData();
         fd.append('id', bookId);
 
-        // Optimistic UI: toggle immediately, revert on error
-        var wasOutline = btn.classList.contains('btn-outline-danger');
-        var wasPressed = btn.getAttribute('aria-pressed') === 'true';
-
-        // Toggle visual state
-        if (wasOutline) {
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-danger');
-            btn.setAttribute('aria-pressed', 'true');
-        } else {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-outline-danger');
-            btn.setAttribute('aria-pressed', 'false');
-        }
+        // Do not toggle classes; keep CSS identical to cart button.
+        // Immediately blur to avoid sticky :focus styles after click.
+        try { btn.blur(); } catch (e) {}
 
         postForm(url, fd)
             .then(function (data) {
@@ -97,7 +90,6 @@
                 // If server returned resolved item, update button/form to use numeric DB id
                 if (data && data.item && data.item.id) {
                     var resolved = String(data.item.id);
-                    // update data-book-id and hidden input if present
                     btn.setAttribute('data-book-id', resolved);
                     var form = btn.closest('form');
                     if (form) {
@@ -105,22 +97,12 @@
                         if (input) input.value = resolved;
                     }
                 }
-                // success - keep toggled state
             })
             .catch(function (err) {
                 console.error(err);
-                // revert UI change on error
-                if (wasOutline) {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-outline-danger');
-                    btn.setAttribute('aria-pressed', wasPressed ? 'true' : 'false');
-                } else {
-                    btn.classList.remove('btn-outline-danger');
-                    btn.classList.add('btn-danger');
-                    btn.setAttribute('aria-pressed', wasPressed ? 'true' : 'false');
-                }
                 try { alert('Neúspech pri pridávaní do wishlistu. Skúste znova.'); } catch (e) {}
-            });
+            })
+            .finally(function(){ try { btn.blur(); } catch (e) {} });
     }
 
     // enableDragToReorder
@@ -255,6 +237,11 @@
                     handleAction(e, form.getAttribute('action'), function (id) {
                         var el = document.querySelector('.book-card[data-id="' + id + '"]') || document.querySelector('.wishlist-row[data-id="' + id + '"]');
                         if (el) el.remove();
+                        // After removal/move, update rank numbers on remaining items
+                        try {
+                            var grid = document.getElementById('wishlist-grid');
+                            if (grid) updateRanks(grid);
+                        } catch (err) { /* ignore */ }
                     });
                 });
             }

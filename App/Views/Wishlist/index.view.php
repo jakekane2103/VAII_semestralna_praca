@@ -5,6 +5,7 @@
 
 <link rel="stylesheet" href="<?= $link->asset('css/wishlist.css') ?>">
 
+
 <div class="container-fluid">
     <div class="site-bg-light">
         <div class="wishlist-container">
@@ -70,3 +71,4 @@
     window.WISHLIST_REORDER_URL = <?= json_encode($link->url('Wishlist.reorder')) ?>;
 </script>
 <!-- wishlist.js removed - wishlist behavior is now included in public/js/cart.js -->
+<script src="<?= $link->asset('js/wishlist.js') ?>"></script>

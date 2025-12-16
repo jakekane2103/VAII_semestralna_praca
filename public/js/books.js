@@ -14,6 +14,14 @@
       return;
     }
 
+    // Mark known add-to-cart buttons so global fallbacks only affect them
+    forms.forEach(function(f){
+      try {
+        var sb = f.querySelector('button[type="submit"]');
+        if (sb && sb.dataset) sb.dataset.addToCart = '1';
+      } catch(e) { /* ignore */ }
+    });
+
     const modalImg = document.getElementById('addToCartModalImg');
     const modalTitle = document.getElementById('addToCartModalTitle');
     const modalAuthor = document.getElementById('addToCartModalAuthor');
@@ -115,7 +123,8 @@
 
        // Broader fallback: scan all buttons on page and restore any that still show 'Pridáv' (covers edge cases)
        try {
-         var allButtons = document.querySelectorAll('button');
+         // Only consider buttons we previously marked as add-to-cart to avoid touching wishlist or other buttons
+         var allButtons = document.querySelectorAll('button[data-add-to-cart]');
          allButtons.forEach(function(btn){
            try {
             var lblEl = btn.querySelector && btn.querySelector('.btn-label') ? btn.querySelector('.btn-label') : null;
@@ -350,3 +359,50 @@
     });
   });
  })();
+
+// File: public/js/books.js
+// Lightweight protections for Books pages
+(function(){
+  document.addEventListener('DOMContentLoaded', function () {
+    // Save original state of wishlist buttons so other scripts can't permanently overwrite them
+    try {
+      document.querySelectorAll('.btn-wishlist').forEach(function (btn) {
+        try {
+          if (!btn.dataset) return;
+          btn.dataset.wishlistInner = btn.innerHTML;
+          btn.dataset.wishlistClass = btn.className;
+          btn.dataset.wishlistAria = btn.getAttribute('aria-pressed') || '';
+          btn.dataset.wishlistStored = '1';
+        } catch (e) { /* ignore per-button errors */ }
+      });
+    } catch (e) { /* ignore */ }
+
+    var modal = document.getElementById('addToCartModal');
+    if (!modal) return;
+
+    // When modal hides, restore wishlist buttons to their stored markup
+    try {
+      modal.addEventListener('hidden.bs.modal', function () {
+        try {
+          document.querySelectorAll('.btn-wishlist').forEach(function (btn) {
+            try {
+              if (!btn.dataset || btn.dataset.wishlistStored !== '1') return;
+              if (typeof btn.dataset.wishlistInner !== 'undefined') btn.innerHTML = btn.dataset.wishlistInner;
+              if (typeof btn.dataset.wishlistClass !== 'undefined') btn.className = btn.dataset.wishlistClass;
+              if (typeof btn.dataset.wishlistAria !== 'undefined' && btn.dataset.wishlistAria !== '') {
+                btn.setAttribute('aria-pressed', btn.dataset.wishlistAria);
+              } else {
+                btn.removeAttribute('aria-pressed');
+              }
+            } catch (e) { /* ignore per-button restore errors */ }
+          });
+        } catch (e) { /* ignore */ }
+      });
+
+      // Also restore on modal hide start (defensive)
+      modal.addEventListener('hide.bs.modal', function () {
+        try { var ev = new Event('hidden.bs.modal'); modal.dispatchEvent(ev); } catch (e) { /* ignore */ }
+      });
+    } catch (e) { /* ignore */ }
+  });
+})();

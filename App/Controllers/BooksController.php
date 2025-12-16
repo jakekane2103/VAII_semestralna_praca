@@ -107,6 +107,11 @@ class BooksController extends BaseController
             return $this->redirect($this->url('Books.index'));
         }
 
-        return $this->html(['book' => $book], 'BookDetail');
+        // Determine if the book is already in wishlist to reflect heart style
+        $session = $this->app->getSession();
+        $wishlist = $session->get('wishlist', []);
+        $inWishlist = in_array((string)($book['id'] ?? $id), array_map('strval', $wishlist), true);
+
+        return $this->html(['book' => $book, 'inWishlist' => $inWishlist], 'BookDetail');
     }
 }
