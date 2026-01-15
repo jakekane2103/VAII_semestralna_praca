@@ -67,8 +67,9 @@
 </div>
 
 <script>
-    // Provide reorder endpoint to wishlist.js
+    // Provide reorder endpoint to wishlist.js/cart.js
     window.WISHLIST_REORDER_URL = <?= json_encode($link->url('Wishlist.reorder')) ?>;
 </script>
-<!-- wishlist.js removed - wishlist behavior is now included in public/js/cart.js -->
+
+<!-- Load wishlist.js for drag&drop ranking and reorder AJAX (move/remove handled elsewhere). -->
 <script src="<?= $link->asset('js/wishlist.js') ?>"></script>

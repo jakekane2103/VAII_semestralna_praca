@@ -226,30 +226,15 @@
     // Used: executes on DOM ready to set up all behaviors declared above.
     document.addEventListener('DOMContentLoaded', function () {
         // Existing wishlist page forms: move/remove
-        var forms = document.querySelectorAll('#wishlist-grid form');
-        forms.forEach(function (form) {
-            var action = form.getAttribute('action') || '';
-            var isMove = action.endsWith('/moveToCart') || action.indexOf('moveToCart') !== -1;
-            var isRemove = action.endsWith('/remove') || action.indexOf('remove') !== -1;
-
-            if (isMove || isRemove) {
-                form.addEventListener('submit', function (e) {
-                    handleAction(e, form.getAttribute('action'), function (id) {
-                        var el = document.querySelector('.book-card[data-id="' + id + '"]') || document.querySelector('.wishlist-row[data-id="' + id + '"]');
-                        if (el) el.remove();
-                        // After removal/move, update rank numbers on remaining items
-                        try {
-                            var grid = document.getElementById('wishlist-grid');
-                            if (grid) updateRanks(grid);
-                        } catch (err) { /* ignore */ }
-                    });
-                });
-            }
-        });
+        // NOTE: move/remove submits are handled by cart.js (global) to keep behavior consistent.
+        // Binding them here as well causes duplicate POSTs (qty +2). So we intentionally skip them here.
 
         // Heart buttons on book lists
         var heartBtns = document.querySelectorAll('.btn-wishlist');
         heartBtns.forEach(function (btn) {
+            // avoid double-binding if another script already bound it
+            if (btn.dataset && btn.dataset.wishlistBound === '1') return;
+            if (btn.dataset) btn.dataset.wishlistBound = '1';
             btn.addEventListener('click', handleHeartClick);
         });
 

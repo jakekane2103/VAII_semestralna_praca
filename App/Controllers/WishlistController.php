@@ -183,43 +183,116 @@ class WishlistController extends BaseController
             return $this->respondBadRequest($request, 'Missing id');
         }
 
-        $session = $this->app->getSession();
-        // Remove from wishlist
-        $wishlist = $session->get('wishlist', []);
-        $wishlist = array_values(array_filter($wishlist, function ($v) use ($id) { return (string)$v !== (string)$id; }));
-        $session->set('wishlist', $wishlist);
-
-        // Add to cart via session
-        $cart = $session->get('cart', []);
-        if (isset($cart[$id])) {
-            $cart[$id] += 1;
-        } else {
-            $cart[$id] = 1;
-        }
-        $session->set('cart', $cart);
-
-        // If user is logged in remove from DB wishlist as well
-        $auth = $this->app->getAuth();
-        if ($auth && $auth->isLogged()) {
-            $user = $auth->getUser();
-            $uid = $user->getId();
-            // ensure $conn is defined
-            $conn = Connection::getInstance();
-            $wid = $this->getOrCreateWishlistId($conn, (int)$uid);
-            if ($wid !== null) {
-                try {
-                    $del = $conn->prepare('DELETE FROM wishlistKniha WHERE id_wishlist = :wid AND id_kniha = :kid');
-                    $del->execute([':wid' => $wid, ':kid' => $id]);
-                } catch (\Throwable $e) { /* ignore */ }
+        // Resolve non-numeric identifiers (ISBN or title) to numeric DB id_kniha (same as add())
+        $resolvedId = $id;
+        $conn = Connection::getInstance();
+        if (!ctype_digit((string)$resolvedId)) {
+            $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE ISBN = :v LIMIT 1');
+            $stmt->execute([':v' => $resolvedId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row && isset($row['id_kniha'])) {
+                $resolvedId = (string)$row['id_kniha'];
+            } else {
+                $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE nazov = :v LIMIT 1');
+                $stmt->execute([':v' => $resolvedId]);
+                $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if ($row && isset($row['id_kniha'])) {
+                    $resolvedId = (string)$row['id_kniha'];
+                }
             }
         }
 
+        if (!$resolvedId) {
+            return $this->respondBadRequest($request, 'Invalid id');
+        }
+
+        $session = $this->app->getSession();
+
+        // Remove from wishlist (session)
+        $wishlist = $session->get('wishlist', []);
+        $wishlist = array_values(array_filter($wishlist, function ($v) use ($resolvedId) {
+            return (string)$v !== (string)$resolvedId;
+        }));
+        $session->set('wishlist', $wishlist);
+
+        $auth = $this->app->getAuth();
+
+        // If logged in: remove from DB wishlist + add to DB cart
+        if ($auth && $auth->isLogged()) {
+            $user = $auth->getUser();
+            $uid = (int)$user->getId();
+
+            $conn->beginTransaction();
+            try {
+                // Remove from DB wishlist
+                $wid = $this->getOrCreateWishlistId($conn, $uid);
+                if ($wid !== null) {
+                    try {
+                        $del = $conn->prepare('DELETE FROM wishlistKniha WHERE id_wishlist = :wid AND id_kniha = :kid');
+                        $del->execute([':wid' => $wid, ':kid' => $resolvedId]);
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+                }
+
+                // Add/increment in DB cart (same behavior as CartController::add)
+                $cartId = $this->getOrCreateCartId($conn, $uid);
+                if ($cartId !== null) {
+                    $line = $conn->prepare('SELECT mnozstvo FROM kosikKniha WHERE id_kosik = :cid AND id_kniha = :bid');
+                    $line->execute([':cid' => $cartId, ':bid' => (int)$resolvedId]);
+                    $existing = $line->fetch(\PDO::FETCH_ASSOC);
+
+                    if ($existing) {
+                        $newQty = (int)$existing['mnozstvo'] + 1;
+                        $upd = $conn->prepare('UPDATE kosikKniha SET mnozstvo = :q WHERE id_kosik = :cid AND id_kniha = :bid');
+                        $upd->execute([':q' => $newQty, ':cid' => $cartId, ':bid' => (int)$resolvedId]);
+                    } else {
+                        $ins = $conn->prepare('INSERT INTO kosikKniha (id_kosik, id_kniha, mnozstvo) VALUES (:cid, :bid, :q)');
+                        $ins->execute([':cid' => $cartId, ':bid' => (int)$resolvedId, ':q' => 1]);
+                    }
+                }
+
+                $conn->commit();
+            } catch (\Throwable $e) {
+                $conn->rollBack();
+                // fall through to redirect/JSON; wishlist already removed from session
+            }
+        } else {
+            // Guest fallback: add to cart via session
+            $cart = $session->get('cart', []);
+            if (isset($cart[$resolvedId])) {
+                $cart[$resolvedId] += 1;
+            } else {
+                $cart[$resolvedId] = 1;
+            }
+            $session->set('cart', $cart);
+        }
+
         if ($request->isAjax() || $request->wantsJson()) {
-            return $this->json(['success' => true, 'action' => 'moved', 'id' => $id]);
+            return $this->json(['success' => true, 'action' => 'moved', 'id' => $resolvedId]);
         }
 
         $referer = $request->server('HTTP_REFERER') ?? $this->url('wishlist.index');
         return $this->redirect($referer);
+    }
+
+    // Helper: get existing cart id for user or create a new one.
+    private function getOrCreateCartId(Connection $conn, int $userId): ?int
+    {
+        $stmt = $conn->prepare('SELECT id_kosik FROM kosik WHERE id_zakaznik = :uid LIMIT 1');
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($row && isset($row['id_kosik'])) {
+            return (int)$row['id_kosik'];
+        }
+
+        $ins = $conn->prepare('INSERT INTO kosik (id_zakaznik) VALUES (:uid)');
+        if ($ins->execute([':uid' => $userId])) {
+            return (int)$conn->lastInsertId();
+        }
+
+        return null;
     }
 
     /**

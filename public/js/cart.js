@@ -356,17 +356,13 @@
     function sendOrderToServer(container, reorderUrl) { var rows = container.querySelectorAll('.wishlist-row'); var order = []; rows.forEach(function (row) { order.push(row.dataset.id); }); container.classList.add('saving'); return postJson(reorderUrl, { order: order }).then(function (data) { if (data && data.success === false) throw new Error(data.message || 'Reorder failed'); if (data && Array.isArray(data.order)) { var byId = {}; var current = Array.prototype.slice.call(container.querySelectorAll('.wishlist-row')); current.forEach(function (r) { byId[r.dataset.id] = r; }); while (container.firstChild) container.removeChild(container.firstChild); data.order.forEach(function (id) { if (byId[id]) container.appendChild(byId[id]); }); updateRanks(container); } }).catch(function (err) { console.error(err); try { alert('Nepodarilo sa uložiť poradie. Skúste to znova.'); } catch (e) {} }).finally(function () { container.classList.remove('saving'); }); }
 
     document.addEventListener('DOMContentLoaded', function () {
-        var forms = document.querySelectorAll('#wishlist-grid form');
-        forms.forEach(function (form) {
-            var action = form.getAttribute('action') || '';
-            var isMove = action.endsWith('/moveToCart') || action.indexOf('moveToCart') !== -1;
-            var isRemove = action.endsWith('/remove') || action.indexOf('remove') !== -1;
+         // Remove/disable wishlist page form submit binding here.
+         // It duplicates the binding in public/js/wishlist.js and causes double POSTs (qty +2).
+         //
+         // var forms = document.querySelectorAll('#wishlist-grid form');
+         // forms.forEach(function (form) { ... });
 
-            if (isMove || isRemove) {
-                form.addEventListener('submit', function (e) { handleAction(e, form.getAttribute('action'), function (id) { var el = document.querySelector('.book-card[data-id="' + id + '"]') || document.querySelector('.wishlist-row[data-id="' + id + '"]'); if (el) el.remove(); }); });
-            }
-        });
-
+        // Keep heart buttons on book lists
         var heartBtns = document.querySelectorAll('.btn-wishlist');
         heartBtns.forEach(function (btn) { btn.addEventListener('click', handleHeartClick); });
 
