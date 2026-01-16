@@ -2,6 +2,10 @@
 /** @var \Framework\Support\LinkGenerator $link */
 /** @var array $book */
 /** @var bool|null $inWishlist */
+/** @var \Framework\Core\IAuthenticator $auth */
+
+// detect admin in the view (same simple username check used by other views)
+$isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin';
 ?>
 
 <div class="page-book-detail bg-light min-vh-100">
@@ -15,8 +19,17 @@
 
                 <!-- Book Cover -->
                 <div class="col-md-5 text-center">
-                    <?php $img = $book['obrazok'] ?? 'images/Real_Estate_(101).jpg'; ?>
-                    <img src="<?= $link->asset($img) ?>"
+                    <?php
+                        $rawImg = $book['obrazok'] ?? '';
+                        if ($rawImg === null || $rawImg === '') {
+                            $imgPath = 'images/Real_Estate_(101).jpg';
+                        } elseif (strpos($rawImg, '/') === false) {
+                            $imgPath = 'images/books/' . $rawImg;
+                        } else {
+                            $imgPath = $rawImg;
+                        }
+                    ?>
+                    <img src="<?= $link->asset($imgPath) ?>"
                          alt="<?= htmlspecialchars($book['nazov'] ?? 'Bez názvu', ENT_QUOTES, 'UTF-8') ?>"
                          class="img-fluid rounded book-detail-cover">
                 </div>
@@ -35,8 +48,8 @@
                             </div>
                         <?php endif; ?>
 
-                        <?php if (!empty($book['seria'])): ?>
-                            <div class="text-muted small">Séria: <?= htmlspecialchars($book['seria'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php if (!empty($book['series_name']) || !empty($book['series_id'])): ?>
+                            <div class="text-muted small">Séria: <?= htmlspecialchars($book['series_name'] ?? $book['series_id'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                     </header>
 
@@ -85,7 +98,8 @@
                             $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
                             $isIn = !empty($inWishlist);
                             ?>
-                            <!-- Wishlist button, same CSS as cart and to its left -->
+                            <?php if (!($isAdmin ?? false)) { ?>
+                            <!-- Wishlist button, same CSS as cart and to its left (hidden for admin) -->
                             <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
                                 <input type="hidden" name="id" value="<?= $bookId ?>">
                                 <button type="submit" role="button" class="btn btn-primary px-4 btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
@@ -103,7 +117,7 @@
                                     <span class="visually-hidden btn-label">Do košíka</span>
                                 </button>
                             </form>
-
+                            <?php } ?>
                         </div>
                     </div>
                 </div>

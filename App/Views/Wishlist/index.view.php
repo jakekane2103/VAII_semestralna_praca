@@ -23,8 +23,10 @@
                         $title = htmlspecialchars($item['nazov'] ?? $item['nazev'] ?? $item['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8');
                         $author = htmlspecialchars($item['autor'] ?? $item['author'] ?? '', ENT_QUOTES, 'UTF-8');
                         $price = isset($item['cena']) ? number_format((float)$item['cena'], 2) : (isset($item['price']) ? number_format((float)$item['price'],2) : null);
-                        $coverPath = $item['obrazok'] ?? $item['obrazek'] ?? $item['cover'] ?? 'images/placeholder-book.png';
-                        $cover = $link->asset($coverPath);
+                        // Normalize cover path: if stored value is a bare filename, prefix with images/books/
+                        $rawCover = $item['obrazok'] ?? $item['obrazek'] ?? $item['cover'] ?? '';
+                        $imgPath = 'images/books/' . $rawCover;
+                        $cover = $link->asset($imgPath);
                         $detailUrl = $link->url('Books.detail', ['id' => $id]);
                     ?>
                     <div class="wishlist-row d-flex align-items-center p-2 mb-2 bg-white shadow-sm rounded fs-5" data-id="<?= $id ?>">

@@ -17,11 +17,14 @@ $total = 0;
                 $total += $itemTotal;
                 // Precompute book detail URL
                 $detailUrl = $link->url('Books.detail', ['id' => (int)$item['id_kniha']]);
+                // Normalize image path: if stored value is a bare filename, prefix with images/books/
+                $rawImg = $item['obrazok'] ?? '';
+                $imgPath = 'images/books/' . $rawImg;
                 ?>
                 <div class="col-12">
                     <div class="card cart-item border-0 shadow-sm p-3 d-flex flex-row align-items-center">
                          <a href="<?= $detailUrl ?>" class="d-inline-block">
-                             <img src="<?= $link->asset($item['obrazok']) ?>"
+                             <img src="<?= $link->asset($imgPath) ?>"
                                   alt="<?= htmlspecialchars($item['nazov'], ENT_QUOTES, 'UTF-8') ?>"
                                  class="cart-img me-3">
                          </a>

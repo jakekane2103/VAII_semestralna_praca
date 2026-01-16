@@ -53,7 +53,8 @@ class WishlistController extends BaseController
             if (!empty($ids)) {
                 // build placeholders
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $sql = "SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria FROM kniha WHERE id_kniha IN ($placeholders)";
+                // Select books and their serie name (if any)
+                $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name FROM kniha b LEFT JOIN serie s ON b.series_id = s.id WHERE b.id_kniha IN ($placeholders)";
                 $stmt = $conn->prepare($sql);
                 // bind as integers
                 $stmt->execute($ids);

@@ -3,6 +3,10 @@
 /** @var array $books */
 /** @var string $q */
 /** @var string|null $authorFilter */
+/** @var \Framework\Core\IAuthenticator $auth */
+
+// detect admin in the view (match project's simple username check)
+$isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin';
 ?>
 
 <div class="container-fluid">
@@ -25,13 +29,22 @@
             $detailUrl = $link->url('Books.detail', ['id' => $book['id']]);
             $author = $book['autor'] ?? '';
             $authorUrl = $author !== '' ? $link->url('Books.index', ['q' => $author, 'author' => 1]) : null;
+            // normalize obrazok for display: prefix with images/books/ when value is a bare filename
+            $rawImg = $book['obrazok'] ?? '';
+            if ($rawImg === null || $rawImg === '') {
+                $imgPath = 'images/placeholder-book.png';
+            } elseif (strpos($rawImg, '/') === false) {
+                $imgPath = 'images/books/' . $rawImg;
+            } else {
+                $imgPath = $rawImg;
+            }
             ?>
             <div class="col-md-4 p-0">
                 <div class="card h-100 m-0 border-0 shadow-sm">
                     <div class="row g-0 h-100 ">
                         <div class="col-4 h-100 p-0">
                             <a href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>" class="d-block h-100">
-                                <img src="<?= $link->asset($book['obrazok']) ?>"
+                                <img src="<?= $link->asset($imgPath) ?>"
                                      class="img-fluid rounded-start book-cover h-100"
                                      alt="<?= htmlspecialchars($book['nazov'], ENT_QUOTES, 'UTF-8') ?>">
                             </a>
@@ -65,36 +78,38 @@
                                         $ariaPressed = $inWishlist ? 'true' : 'false';
                                         ?>
 
-                                        <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
-                                            <input type="hidden" name="id" value="<?= $bookId ?>">
-                                            <button type="submit" role="button" class="<?= $btnClass ?> btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
-                                                    data-book-id="<?= $bookId ?>" aria-pressed="<?= $ariaPressed ?>">
-                                                <img src="<?= $link->asset($inWishlist ? 'images/wishlistIconRed-outlineWhite.png' : 'images/wishlistIconWhite.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
-                                                <span class="visually-hidden">Pridať do wishlistu</span>
-                                            </button>
-                                        </form>
+                                        <?php if (!($isAdmin ?? false)) { ?>
+                                            <!-- Wishlist + Cart controls (hidden for admin users) -->
+                                            <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
+                                                <input type="hidden" name="id" value="<?= $bookId ?>">
+                                                <button type="submit" role="button" class="<?= $btnClass ?> btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
+                                                        data-book-id="<?= $bookId ?>" aria-pressed="<?= $ariaPressed ?>">
+                                                    <img src="<?= $link->asset($inWishlist ? 'images/wishlistIconRed-outlineWhite.png' : 'images/wishlistIconWhite.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
+                                                    <span class="visually-hidden">Pridať do wishlistu</span>
+                                                </button>
+                                            </form>
 
-                                        <!-- replaced plain form with AJAX-capable form (class js-add-to-cart) -->
-                                        <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0 js-add-to-cart"
-                                              data-book-title="<?= htmlspecialchars($book['nazov'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                              data-book-author="<?= htmlspecialchars($author, ENT_QUOTES, 'UTF-8') ?>"
-                                              data-book-image="<?= $link->asset($book['obrazok']) ?>"
-                                              data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                            <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <input type="hidden" name="qty" value="1">
-                                            <button type="submit" class="btn btn-primary">
-                                                <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
-                                                <span class="visually-hidden btn-label">Do košíka</span>
-                                            </button>
-                                         </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php endforeach; ?>
+                                            <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0 js-add-to-cart"
+                                                  data-book-title="<?= htmlspecialchars($book['nazov'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                                  data-book-author="<?= htmlspecialchars($author, ENT_QUOTES, 'UTF-8') ?>"
+                                                  data-book-image="<?= $link->asset($imgPath) ?>"
+                                                  data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="qty" value="1">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                                    <span class="visually-hidden btn-label">Do košíka</span>
+                                                </button>
+                                             </form>
+                                        <?php } ?>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         <?php endforeach; ?>
     </div>
 
     <!-- Add to Cart confirmation modal (richer design) -->
@@ -123,7 +138,7 @@
               Nakúpte ešte za <strong id="addToCartModalRemaining">0,00 €</strong> a dopravu do výdajných miest máte zadarmo.
             </div>
             <div class="progress mt-2" style="height:8px;">
-              <div id="addToCartModalProgress" class="progress-bar bg-success" role="progressbar" style="width:0%"></div>
+              <div id="addToCartModalProgress" class="progress-bar bg-success" role="progressbar" style="width:0"></div>
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-3">

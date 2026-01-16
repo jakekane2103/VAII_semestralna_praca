@@ -40,14 +40,21 @@ class AdminController extends BaseController
      */
     public function index(Request $request): Response
     {
-        // Fetch all books to show in admin overview
+        // Fetch all books to show in admin overview and the list of series
         try {
             $conn = Connection::getInstance();
-            $stmt = $conn->prepare("SELECT id_kniha AS id, nazov, autor, cena, obrazok FROM kniha ORDER BY id_kniha DESC");
+            // Join with serie table to get series name (if any)
+            $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.cena, b.obrazok, b.series_id, s.name AS series_name, b.popis FROM kniha b LEFT JOIN serie s ON b.series_id = s.id ORDER BY b.id_kniha DESC");
             $stmt->execute();
             $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Fetch all series for dropdowns
+            $sstmt = $conn->prepare('SELECT id, name FROM serie ORDER BY name');
+            $sstmt->execute();
+            $series = $sstmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
             $books = [];
+            $series = [];
         }
 
         // Read and clear flash message
@@ -94,7 +101,7 @@ class AdminController extends BaseController
             $welcome = $defaultWelcome;
         }
 
-        return $this->html(['books' => $books, 'flash' => $flash, 'welcome' => $welcome]);
+        return $this->html(['books' => $books, 'series' => $series, 'flash' => $flash, 'welcome' => $welcome]);
     }
 
     /**
@@ -109,7 +116,8 @@ class AdminController extends BaseController
 
         $nazov = trim((string)$request->value('nazov'));
         $autor = trim((string)$request->value('autor'));
-        $seria = trim((string)$request->value('seria')) ?: null;
+        $seriesId = $request->value('series_id');
+        $newSeriesName = trim((string)$request->value('series_name_new')) ?: null;
         $cena = $request->value('cena');
         $obrazok = trim((string)$request->value('obrazok')) ?: null;
         $popis = trim((string)$request->value('popis')) ?: null;
@@ -126,14 +134,32 @@ class AdminController extends BaseController
             return $this->redirect($this->url('Admin.index'));
         }
 
+        // Determine series_id: create new series if requested
+        $seriesIdToStore = null;
         try {
             $conn = Connection::getInstance();
-            $sql = "INSERT INTO kniha (nazov, autor, seria, obrazok, popis, cena) VALUES (:nazov, :autor, :seria, :obrazok, :popis, :cena)";
+            if ($seriesId === 'new' && $newSeriesName) {
+                $istmt = $conn->prepare('INSERT INTO serie (name) VALUES (:name)');
+                $istmt->execute([':name' => $newSeriesName]);
+                $seriesIdToStore = (int)$conn->lastInsertId();
+            } elseif ($seriesId !== null && $seriesId !== '' && ctype_digit((string)$seriesId)) {
+                $seriesIdToStore = (int)$seriesId;
+            } else {
+                $seriesIdToStore = null;
+            }
+        } catch (\Exception $e) {
+            // ignore series creation error and proceed with null
+            $seriesIdToStore = null;
+        }
+
+        try {
+            $conn = Connection::getInstance();
+            $sql = "INSERT INTO kniha (nazov, autor, series_id, obrazok, popis, cena) VALUES (:nazov, :autor, :series_id, :obrazok, :popis, :cena)";
             $stmt = $conn->prepare($sql);
             $ok = $stmt->execute([
                 ':nazov' => $nazov,
                 ':autor' => $autor,
-                ':seria' => $seria,
+                ':series_id' => $seriesIdToStore,
                 ':obrazok' => $obrazok,
                 ':popis' => $popis,
                 ':cena' => $cena,
@@ -182,6 +208,30 @@ class AdminController extends BaseController
             $params[':autor'] = $autor;
         }
 
+        // Handle series update: either existing series_id, new series, or empty -> no change
+        $seriesId = $request->value('series_id');
+        $newSeriesName = trim((string)$request->value('series_name_new')) ?: null;
+        if ($seriesId !== null && $seriesId !== '') {
+            try {
+                $conn = Connection::getInstance();
+                if ($seriesId === 'new' && $newSeriesName) {
+                    $istmt = $conn->prepare('INSERT INTO serie (name) VALUES (:name)');
+                    $istmt->execute([':name' => $newSeriesName]);
+                    $newId = (int)$conn->lastInsertId();
+                    $fields[] = 'series_id = :series_id';
+                    $params[':series_id'] = $newId;
+                } elseif (ctype_digit((string)$seriesId)) {
+                    $fields[] = 'series_id = :series_id';
+                    $params[':series_id'] = (int)$seriesId;
+                } elseif ($seriesId === 'none') {
+                    // Explicitly clear the series
+                    $fields[] = 'series_id = NULL';
+                }
+            } catch (\Exception $e) {
+                // ignore series creation errors
+            }
+        }
+
         $cena = $request->value('cena');
         if ($cena !== null && $cena !== '') {
             $cena = str_replace(',', '.', (string)$cena);
@@ -203,11 +253,6 @@ class AdminController extends BaseController
             $params[':popis'] = $popis;
         }
 
-        $seria = trim((string)$request->value('seria'));
-        if ($seria !== '') {
-            $fields[] = 'seria = :seria';
-            $params[':seria'] = $seria;
-        }
 
         if (empty($fields)) {
             // Nothing to update

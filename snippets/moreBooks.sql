@@ -1,4 +1,8 @@
-INSERT INTO kniha (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, seria)
+INSERT INTO serie (name) VALUES
+('Mistborn Era 2'),
+('The Wheel of Time');
+
+INSERT INTO kniha (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, series_id)
 VALUES
 -- Mistborn Era 2
 (
@@ -10,7 +14,7 @@ VALUES
     'pevná',
     8,
     '9780765330423',
-    'Mistborn Era 2'
+    (SELECT id FROM serie WHERE name = 'Mistborn Era 2')
 ),
 (
     'Shadows of Self',
@@ -21,7 +25,7 @@ VALUES
     'pevná',
     7,
     '9780765378555',
-    'Mistborn Era 2'
+    (SELECT id FROM serie WHERE name = 'Mistborn Era 2')
 ),
 (
     'The Bands of Mourning',
@@ -32,7 +36,7 @@ VALUES
     'pevná',
     6,
     '9780765378579',
-    'Mistborn Era 2'
+    (SELECT id FROM serie WHERE name = 'Mistborn Era 2')
 ),
 (
     'The Lost Metal',
@@ -43,7 +47,7 @@ VALUES
     'pevná',
     5,
     '9781250318006',
-    'Mistborn Era 2'
+    (SELECT id FROM serie WHERE name = 'Mistborn Era 2')
 ),
 
 -- Wheel of Time
@@ -56,7 +60,7 @@ VALUES
     'pevná',
     9,
     '9780765305100',
-    'The Wheel of Time'
+    (SELECT id FROM serie WHERE name = 'The Wheel of Time')
 ),
 (
     'The Dragon Reborn',
@@ -67,7 +71,7 @@ VALUES
     'pevná',
     8,
     '9780812513714',
-    'The Wheel of Time'
+    (SELECT id FROM serie WHERE name = 'The Wheel of Time')
 ),
 (
     'The Shadow Rising',
@@ -78,5 +82,5 @@ VALUES
     'pevná',
     7,
     '9780812513738',
-    'The Wheel of Time'
+    (SELECT id FROM serie WHERE name = 'The Wheel of Time')
 );

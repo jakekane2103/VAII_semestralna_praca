@@ -58,14 +58,15 @@ class BooksController extends BaseController
 
         if ($q === '') {
             // No search term -> return all books (limited to reasonable count)
-            $stmt = $conn->prepare("SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria FROM kniha ORDER BY nazov LIMIT 200");
+            $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name FROM kniha b LEFT JOIN serie s ON b.series_id = s.id ORDER BY b.nazov LIMIT 200");
             $stmt->execute();
         } else {
             // Search by nazov, autor or seria (case-insensitive by DB collation)
-            $sql = "SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria
-                    FROM kniha
-                    WHERE nazov LIKE :q OR autor LIKE :q OR seria LIKE :q
-                    ORDER BY nazov LIMIT 200";
+            $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
+                    FROM kniha b
+                    LEFT JOIN serie s ON b.series_id = s.id
+                    WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q
+                    ORDER BY b.nazov LIMIT 200";
             $stmt = $conn->prepare($sql);
             $stmt->execute([':q' => '%' . $q . '%']);
         }
@@ -78,11 +79,21 @@ class BooksController extends BaseController
         // normalize to string keys for quick lookup
         $wishlistMap = array_flip(array_map('strval', $wishlist));
 
+        // Fetch series list for admin edit/add forms (non-critical)
+        try {
+            $sstmt = $conn->prepare('SELECT id, name FROM serie ORDER BY name');
+            $sstmt->execute();
+            $series = $sstmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            $series = [];
+        }
+
         return $this->html([
             'books'        => $books,
             'q'            => $q,
             'authorFilter' => $authorFilter,
             'wishlistMap'  => $wishlistMap,
+            'series'       => $series,
         ]);
     }
 
@@ -98,7 +109,7 @@ class BooksController extends BaseController
         }
 
         $conn = Connection::getInstance();
-        $stmt = $conn->prepare("SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena, seria, ISBN FROM kniha WHERE id_kniha = :id");
+        $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name, b.ISBN FROM kniha b LEFT JOIN serie s ON b.series_id = s.id WHERE b.id_kniha = :id");
         $stmt->execute([':id' => $id]);
         $book = $stmt->fetch(\PDO::FETCH_ASSOC);
 

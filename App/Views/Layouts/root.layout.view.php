@@ -78,32 +78,48 @@ include __DIR__ . '/../Auth/loginModal.php';
             </form>
 
             <ul class="navbar-nav">
-                <?php if ($auth?->isLogged()) { ?>
-
+                <?php if ($auth?->isLogged()) {
+                    $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
+                    if ($isAdmin) { ?>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-success" href="<?= $link->url('admin.index') ?>">
+                                ADMIN PANEL
+                            </a>
+                        </li>
+                    <?php } else { ?>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
+                                <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                                <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                            </a>
+                        </li>
+                    <?php }
+                } else { ?>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
-                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
-                            <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
-                        </a>
-                    </li>
-                <?php } else { ?>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center"
-                           data-bs-toggle="modal" data-bs-target="#loginModal"
-                           href="<?= $link->url('auth.loginModal') ?>">
+                        <a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="<?= $link->url('auth.loginModal') ?>">
                             <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                            <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                        </a>
+                    </li>
                 <?php } ?>
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
-                        <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
-                    </a>
-                </li>
             </ul>
         </div>
 
@@ -128,13 +144,6 @@ include __DIR__ . '/../Auth/loginModal.php';
         <?= $contentHTML ?>
     </div>
 </div>
-
-<?php if ($auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin') { ?>
-    <!-- Global ADMIN PANEL floating button (visible only for admin user) -->
-    <a href="<?= $link->url('admin.index') ?>" class="btn btn-warning admin-panel-fab">
-        ADMIN PANEL
-    </a>
-<?php } ?>
 
 <footer class="site-footer py-4 mt-auto w-100">
     <div class="container">
@@ -192,12 +201,12 @@ include __DIR__ . '/../Auth/loginModal.php';
 
         <!-- Copyright -->
         <div class="text-center text-muted mt-4">
-            <img class="footerLogo" src="images/kaneVeritasLogoSymbol.png" alt="logo">
-            © 2025 Kane Veritas. Internetové kníhkupectvo. Všetky práva vyhradené.<br>
-            Engineered with coffee and too many late nights.
-        </div>
-    </div>
-</footer>
+            <img class="footerLogo" src="<?= $link->asset('images/kaneVeritasLogoSymbol.png') ?>" alt="logo">
+             © 2025 Kane Veritas. Internetové kníhkupectvo. Všetky práva vyhradené.<br>
+             Engineered with coffee and too many late nights.
+         </div>
+     </div>
+ </footer>
 
-</body>
-</html>
+ </body>
+ </html>

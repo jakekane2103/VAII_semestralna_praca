@@ -37,11 +37,16 @@ foreach ($sections as $section):
                     <div class="books-wrapper">
                         <div class="row mt-4">
                             <?php foreach ($chunk as $book): ?>
-                                <?php $detailUrl = $link->url('Books.detail', ['id' => $book['id_kniha']]); ?>
+                                <?php
+                                    $detailUrl = $link->url('Books.detail', ['id' => $book['id_kniha']]);
+                                    // normalize obrazok: if it's a bare filename (no slash), prefix with images/books/
+                                    $rawImg = $book['obrazok'] ?? '';
+                                    $imgPath = 'images/books/' . $rawImg;
+                                ?>
                                 <div class="col-6 col-md-3 mb-1 w-20">
                                     <a href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-reset d-block h-100">
                                         <div class="card text-center border-0 shadow-sm h-100">
-                                            <img src="<?= $link->asset($book['obrazok']) ?>"
+                                            <img src="<?= $link->asset($imgPath) ?>"
                                                  class="card-img-top book-cover mt-3 h-70"
                                                  alt="<?= htmlspecialchars($book['nazov'], ENT_QUOTES) ?>">
                                             <div class="card-body">
