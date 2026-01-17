@@ -1,0 +1,24 @@
+/* Simple account page styles */
+.account-form {
+    max-width: 640px;
+    margin: 0 auto; /* center inside container */
+    background-color: #f8f9fa; /* soft grey matching books/wishlist */
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Make labels slightly bolder */
+.account-form .form-label { font-weight: 600; }
+
+/* Slight spacing for success/error messages */
+.account-form .alert { margin-top: 8px; }
+
+@media (max-width: 767.98px) {
+    .account-form {
+        padding: 1rem;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+}

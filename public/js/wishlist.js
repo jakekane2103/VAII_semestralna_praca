@@ -24,6 +24,54 @@
             });
     }
 
+    // small transient toast helper: creates a non-obscuring popup in the bottom-right corner
+    function showTransientToast(message, timeout) {
+        timeout = typeof timeout === 'number' ? timeout : 1800;
+        try {
+            var containerId = '__wv_toast_container__';
+            var container = document.getElementById(containerId);
+            if (!container) {
+                container = document.createElement('div');
+                container.id = containerId;
+                container.style.position = 'fixed';
+                container.style.right = '12px';
+                container.style.bottom = '12px';
+                container.style.zIndex = 1060; // above most elements but below modals
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '8px';
+                document.body.appendChild(container);
+            }
+
+            var toast = document.createElement('div');
+            toast.className = 'wv-toast';
+            toast.style.background = 'rgba(0,0,0,0.75)';
+            toast.style.color = '#fff';
+            toast.style.padding = '8px 12px';
+            toast.style.borderRadius = '6px';
+            toast.style.fontSize = '13px';
+            toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(6px)';
+            toast.style.transition = 'opacity 220ms ease, transform 220ms ease';
+            toast.textContent = message;
+
+            container.appendChild(toast);
+            // force reflow then show
+            void toast.offsetWidth;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(6px)';
+                setTimeout(function () { try { container.removeChild(toast); } catch (e) {} }, 260);
+            }, timeout);
+        } catch (e) {
+            try { console.log(message); } catch (e2) {}
+        }
+    }
+
     // postJson
     // Purpose: Send JSON POST to server and parse JSON response.
     // Input: url string, obj - object to send
@@ -68,41 +116,149 @@
     // Purpose: Toggle wishlist "heart" button optimistically and call server to persist.
     // - Updates classes and aria-pressed immediately, sends POST via postForm, and reverts UI on error.
     // Input: click event on button with data-book-id
-    // Used: bound to .btn-wishlist buttons in DOMContentLoaded block below.
+    // Used: bound via delegated listener below.
     function handleHeartClick(e) {
-        e.preventDefault();
-        var btn = e.currentTarget;
-        var bookId = btn.getAttribute('data-book-id');
-        if (!bookId) return;
+        try {
+            // Determine the button element robustly (support delegation)
+            var btn = (e && e.currentTarget && e.currentTarget.matches && e.currentTarget.matches('.btn-wishlist')) ? e.currentTarget : (e && e.target && e.target.closest ? e.target.closest('.btn-wishlist') : null);
+            if (!btn) return;
 
-        var url = window.WISHLIST_ADD_URL || (document.body && document.body.dataset && document.body.dataset.wishlistAddUrl) || '/wishlist/add';
-        var fd = new FormData();
-        fd.append('id', bookId);
+            // Prevent duplicate activations (pointerdown + click) on the same button within short time
+            try {
+                // If another request for this button is in-flight, ignore
+                if (btn.getAttribute('data-wv-inflight') === '1') return;
+                btn.setAttribute('data-wv-inflight', '1');
 
-        // Do not toggle classes; keep CSS identical to cart button.
-        // Immediately blur to avoid sticky :focus styles after click.
-        try { btn.blur(); } catch (e) {}
-
-        postForm(url, fd)
-            .then(function (data) {
-                if (data && data.success === false) throw new Error(data.message || 'Action failed');
-
-                // If server returned resolved item, update button/form to use numeric DB id
-                if (data && data.item && data.item.id) {
-                    var resolved = String(data.item.id);
-                    btn.setAttribute('data-book-id', resolved);
-                    var form = btn.closest('form');
-                    if (form) {
-                        var input = form.querySelector('input[name="id"]');
-                        if (input) input.value = resolved;
-                    }
+                var last = parseInt(btn.getAttribute('data-wv-last') || '0', 10) || 0;
+                var now = Date.now();
+                if (now - last < 700) {
+                    // ignore duplicate
+                    btn.removeAttribute('data-wv-inflight');
+                    return;
                 }
-            })
-            .catch(function (err) {
-                console.error(err);
-                try { alert('Neúspech pri pridávaní do wishlistu. Skúste znova.'); } catch (e) {}
-            })
-            .finally(function(){ try { btn.blur(); } catch (e) {} });
+                btn.setAttribute('data-wv-last', String(now));
+            } catch (e) { /* ignore */ }
+
+            // Prevent further handlers and default submission
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            try { if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); } catch (x) {}
+            try { if (typeof e.stopPropagation === 'function') e.stopPropagation(); } catch (x) {}
+
+            var bookId = btn.getAttribute('data-book-id');
+            // DEBUG: log that handler was reached
+            try { console.debug && console.debug('wishlist: click handler reached', { bookId: bookId, btn: btn }); } catch (e) {}
+            if (!bookId) return;
+
+            // Determine whether this click is an add (newPressed true) or remove (newPressed false)
+            var wasPressed = (btn.getAttribute('aria-pressed') === 'true');
+            var newPressed = !wasPressed;
+
+            // Choose endpoint based on desired state (add vs remove). Keep existing global fallbacks.
+            var addUrl = window.WISHLIST_ADD_URL || (document.body && document.body.dataset && document.body.dataset.wishlistAddUrl) || '/wishlist/add';
+            var removeUrl = window.WISHLIST_REMOVE_URL || (document.body && document.body.dataset && document.body.dataset.wishlistRemoveUrl) || '/wishlist/remove';
+            var url = newPressed ? addUrl : removeUrl;
+
+            var fd = new FormData();
+            fd.append('id', bookId);
+
+            // Optimistic UI: toggle visual state immediately
+            var wasPressed = (btn.getAttribute('aria-pressed') === 'true');
+            var newPressed = !wasPressed;
+
+            // Helper to apply visual state (keeps image swap by filename)
+            function applyState(pressed) {
+                try {
+                    // update classes
+                    if (pressed) {
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn', 'btn-danger');
+                        btn.setAttribute('aria-pressed', 'true');
+                    } else {
+                        btn.classList.remove('btn-danger');
+                        btn.classList.add('btn', 'btn-outline-danger');
+                        btn.setAttribute('aria-pressed', 'false');
+                    }
+
+                    // swap image by filename to avoid relying on absolute/public paths
+                    var img = btn.querySelector('img');
+                    if (img) {
+                        try {
+                            var iconOn = btn.getAttribute('data-icon-on') || (btn.dataset && btn.dataset.iconOn) || null;
+                            var iconOff = btn.getAttribute('data-icon-off') || (btn.dataset && btn.dataset.iconOff) || null;
+                            if (pressed) {
+                                if (iconOn) img.setAttribute('src', iconOn);
+                                else if (img.getAttribute('src').indexOf('wishlistIconRed-outlineWhite') === -1) {
+                                    img.setAttribute('src', img.getAttribute('src').replace('wishlistIconWhite', 'wishlistIconRed-outlineWhite'));
+                                }
+                            } else {
+                                if (iconOff) img.setAttribute('src', iconOff);
+                                else if (img.getAttribute('src').indexOf('wishlistIconRed') !== -1) {
+                                    img.setAttribute('src', img.getAttribute('src').replace('wishlistIconRed-outlineWhite', 'wishlistIconWhite'));
+                                }
+                            }
+                        } catch (e) { /* ignore image swap errors */ }
+                    }
+                } catch (e) { /* ignore UI set errors */ }
+            }
+
+            // Apply optimistic state
+            applyState(newPressed);
+            // Show small confirmation for add, unobtrusive
+            try {
+                // toast dedupe: prevent immediate opposite toast for same book
+                var lastToast = (window.__wv_last_wishlist_toast && window.__wv_last_wishlist_toast[bookId]) || null;
+                var nowt = Date.now();
+                var thisType = newPressed ? 'added' : 'removed';
+                if (!lastToast || (nowt - lastToast.t > 800) || lastToast.type === thisType) {
+                    showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu');
+                    // store last toast info
+                    window.__wv_last_wishlist_toast = window.__wv_last_wishlist_toast || {};
+                    window.__wv_last_wishlist_toast[bookId] = { type: thisType, t: nowt };
+                } else {
+                    // suppress the opposite toast that happens too soon
+                    try { console.debug && console.debug('wishlist: suppressed duplicate toast', { bookId: bookId, lastToast: lastToast, thisType: thisType }); } catch (e) {}
+                }
+            } catch (e) {
+                try { showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu'); } catch (ee) {}
+            }
+
+            // Immediately blur to avoid sticky :focus styles after click.
+            try { btn.blur(); } catch (e) {}
+
+            postForm(url, fd)
+                .then(function (data) {
+                    if (data && data.success === false) throw new Error(data.message || 'Action failed');
+
+                    // If server returned resolved item, update button/form to use numeric DB id
+                    if (data && data.item && data.item.id) {
+                        var resolved = String(data.item.id);
+                        btn.setAttribute('data-book-id', resolved);
+                        var form = btn.closest('form');
+                        if (form) {
+                            var input = form.querySelector('input[name="id"]');
+                            if (input) input.value = resolved;
+                        }
+                    }
+
+                    // Optionally, server can return authoritative state; if so, ensure UI matches it
+                    if (data && typeof data.inWishlist !== 'undefined') {
+                        applyState(!!data.inWishlist);
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    // Revert optimistic UI on error
+                    applyState(wasPressed);
+                    try { showTransientToast('Neúspech pri wishlist operácii'); } catch (e) {}
+                })
+                .finally(function(){ try { btn.blur(); } catch (e) {}
+                    try { btn.removeAttribute('data-wv-inflight'); } catch (e) {}
+                    // safety: clear inflight after 3s in case finally wasn't reached
+                    setTimeout(function(){ try { btn.removeAttribute('data-wv-inflight'); } catch (e) {} }, 3000);
+                });
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     // enableDragToReorder
@@ -221,22 +377,23 @@
             });
     }
 
-    // DOMContentLoaded: wire up forms, heart buttons and drag & drop
-    // Purpose: Attach event listeners to wishlist forms (move/remove), heart buttons, and initialize DnD.
-    // Used: executes on DOM ready to set up all behaviors declared above.
-    document.addEventListener('DOMContentLoaded', function () {
-        // Existing wishlist page forms: move/remove
-        // NOTE: move/remove submits are handled by cart.js (global) to keep behavior consistent.
-        // Binding them here as well causes duplicate POSTs (qty +2). So we intentionally skip them here.
+    // DOM-level delegated click binding (attach immediately so timing isn't an issue)
+    if (!window.__wv_wishlist_click_bound) {
+        window.__wv_wishlist_click_bound = true;
+        document.addEventListener('click', function (e) {
+            try {
+                var target = e.target || null;
+                var btn = target && target.closest ? target.closest('.btn-wishlist') : null;
+                if (!btn) return;
+                handleHeartClick(e);
+            } catch (ex) { console.error(ex); }
+        }, true);
 
-        // Heart buttons on book lists
-        var heartBtns = document.querySelectorAll('.btn-wishlist');
-        heartBtns.forEach(function (btn) {
-            // avoid double-binding if another script already bound it
-            if (btn.dataset && btn.dataset.wishlistBound === '1') return;
-            if (btn.dataset) btn.dataset.wishlistBound = '1';
-            btn.addEventListener('click', handleHeartClick);
-        });
+        // NOTE: pointerdown listener removed to avoid duplicate handling on some devices/browsers
+    }
+
+    // DOMContentLoaded: wire up drag & drop
+    document.addEventListener('DOMContentLoaded', function () {
 
         // Enable drag & drop on wishlist rows if present
         var wishlistGrid = document.getElementById('wishlist-grid');

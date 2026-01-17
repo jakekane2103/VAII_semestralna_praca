@@ -30,47 +30,42 @@ foreach ($sections as $section):
 
     <div id="<?= $section['id'] ?>" class="carousel slide bg-light" data-bs-touch="false" data-bs-ride="carousel">
         <div class="carousel-inner mb-2">
-            <?php
-            $chunks = array_chunk($books, 4);
-            foreach ($chunks as $index => $chunk): ?>
-                <div class="carousel-item <?= $index === 0 ? 'active' : '' ?> mb-4">
-                    <div class="books-wrapper">
-                        <div class="row mt-4">
-                            <?php foreach ($chunk as $book): ?>
-                                <?php
-                                    $detailUrl = $link->url('Books.detail', ['id' => $book['id_kniha']]);
-                                    // normalize obrazok: if it's a bare filename (no slash), prefix with images/books/
-                                    $rawImg = $book['obrazok'] ?? '';
-                                    $imgPath = 'images/books/' . $rawImg;
-                                ?>
-                                <div class="col-6 col-md-3 mb-1 w-20">
-                                    <a href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-reset d-block h-100">
-                                        <div class="card text-center border-0 shadow-sm h-100">
-                                            <img src="<?= $link->asset($imgPath) ?>"
-                                                 class="card-img-top book-cover mt-3 h-70"
-                                                 alt="<?= htmlspecialchars($book['nazov'], ENT_QUOTES) ?>">
-                                            <div class="card-body">
-                                                <h5 class="card-title mb-1 fw-bold"><?= htmlspecialchars(mb_strimwidth($book['nazov'], 0, 23, '...'), ENT_QUOTES) ?></h5>
-                                                <p class="card-subtitle text-muted mb-0"><?= htmlspecialchars($book['autor'], ENT_QUOTES) ?></p>
-                                            </div>
-                                            <div class="card-footer bg-transparent border-0">
-                                                <strong class="book-price"><?= htmlspecialchars($book['cena'], ENT_QUOTES) ?> €</strong>
-                                            </div>
-                                        </div>
-                                    </a>
+            <div class="books-wrapper">
+                <div class="carousel-cards row mt-4">
+                    <?php foreach ($books as $book): ?>
+                        <?php
+                            $detailUrl = $link->url('Books.detail', ['id' => $book['id_kniha']]);
+                            $rawImg = $book['obrazok'] ?? '';
+                            $imgPath = 'images/books/' . $rawImg;
+                        ?>
+                        <div class="carousel-card col-6 col-md-3 mb-1">
+                            <a href="<?= htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-reset d-block h-100">
+                                <div class="card text-center border-0 shadow-sm h-100">
+                                    <img src="<?= $link->asset($imgPath) ?>"
+                                         class="card-img-top book-cover mt-3 img-fluid"
+                                         alt="<?= htmlspecialchars($book['nazov'], ENT_QUOTES) ?>">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-1 fw-bold"><?= htmlspecialchars(mb_strimwidth($book['nazov'], 0, 23, '...'), ENT_QUOTES) ?></h5>
+                                        <p class="card-subtitle text-muted mb-0"><?= htmlspecialchars($book['autor'], ENT_QUOTES) ?></p>
+                                    </div>
+                                    <div class="card-footer bg-transparent border-0">
+                                        <strong class="book-price"><?= htmlspecialchars($book['cena'], ENT_QUOTES) ?> €</strong>
+                                    </div>
                                 </div>
-                            <?php endforeach; ?>
+                            </a>
                         </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-            <?php endforeach; ?>
+            </div>
         </div>
 
         <button class="carousel-control-prev" type="button" data-bs-target="#<?= $section['id'] ?>" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
         </button>
         <button class="carousel-control-next" type="button" data-bs-target="#<?= $section['id'] ?>" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
         </button>
     </div>
 

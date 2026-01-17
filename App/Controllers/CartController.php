@@ -239,6 +239,113 @@ class CartController extends BaseController
     }
 
     /**
+     * Simple checkout page rendering (GET)
+     */
+    public function checkout(Request $request): Response
+    {
+        $auth = $this->app->getAuth();
+        $user = $auth?->getUser();
+        $items = [];
+        $total = 0.0;
+        $totalQty = 0;
+
+        if ($user && $user->getId() !== null) {
+            $conn = Connection::getInstance();
+            $sql = "SELECT k.id_kniha, k.nazov, k.autor, k.obrazok, k.cena, kk.mnozstvo
+                    FROM kosik ko
+                    JOIN kosikKniha kk ON ko.id_kosik = kk.id_kosik
+                    JOIN kniha k ON kk.id_kniha = k.id_kniha
+                    WHERE ko.id_zakaznik = :uid";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':uid' => $user->getId()]);
+            $items = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+            foreach ($items as $it) {
+                $qty = (int)($it['mnozstvo'] ?? 1);
+                $price = (float)($it['cena'] ?? 0);
+                $total += $price * $qty;
+                $totalQty += $qty;
+            }
+        }
+
+        return $this->html(['items' => $items, 'total' => $total, 'totalQty' => $totalQty]);
+    }
+
+    /**
+     * Place order (POST) - simple flow: create objednavka and polozkaObjednavky, then clear the cart lines.
+     */
+    public function placeOrder(Request $request): Response
+    {
+        $auth = $this->app->getAuth();
+        $user = $auth?->getUser();
+        if (!$user || $user->getId() === null) {
+            return $this->redirect($this->url('home.index', ['openLogin' => 1]));
+        }
+
+        $conn = Connection::getInstance();
+        $cartId = $this->getOrCreateCartId($conn, $user->getId());
+        if ($cartId === null) {
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        // Fetch current cart lines
+        $stmt = $conn->prepare('SELECT kk.id_kniha, kk.mnozstvo, k.cena FROM kosikKniha kk JOIN kniha k ON kk.id_kniha = k.id_kniha WHERE kk.id_kosik = :cid');
+        $stmt->execute([':cid' => $cartId]);
+        $lines = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+        if (empty($lines)) {
+            // nothing to order
+            $this->app->getSession()->set('order_error', 'Košík je prázdny.');
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        $total = 0.0;
+        $totalQty = 0;
+        foreach ($lines as $l) {
+            $qty = (int)($l['mnozstvo'] ?? 1);
+            $price = (float)($l['cena'] ?? 0);
+            $total += $price * $qty;
+            $totalQty += $qty;
+        }
+
+        $conn->beginTransaction();
+        try {
+            $ins = $conn->prepare('INSERT INTO objednavka (id_zakaznik, datum_vytvorenia, stav, mnozstvo, celkova_cena) VALUES (:uid, :dt, :stav, :mnozstvo, :celkova)');
+            $now = date('Y-m-d H:i:s');
+            $ins->execute([
+                ':uid' => $user->getId(),
+                ':dt' => $now,
+                ':stav' => 'nova',
+                ':mnozstvo' => $totalQty,
+                ':celkova' => $total,
+            ]);
+
+            $orderId = (int)$conn->lastInsertId();
+
+            $pstmt = $conn->prepare('INSERT INTO polozkaObjednavky (id_kniha, id_objednavka) VALUES (:kid, :oid)');
+            foreach ($lines as $l) {
+                $pstmt->execute([':kid' => $l['id_kniha'], ':oid' => $orderId]);
+            }
+
+            // Clear cart lines for user
+            $del = $conn->prepare('DELETE kk FROM kosikKniha kk JOIN kosik k ON kk.id_kosik = k.id_kosik WHERE k.id_zakaznik = :uid');
+            $del->execute([':uid' => $user->getId()]);
+
+            $conn->commit();
+
+            $this->app->getSession()->set('order_success', "Objednávka prijatá. ID: $orderId");
+
+        } catch (\Throwable $e) {
+            $conn->rollBack();
+            error_log('[Cart.placeOrder] Exception: ' . $e->getMessage());
+            $this->app->getSession()->set('order_error', 'Pri spracovaní objednávky nastala chyba.');
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        return $this->redirect($this->url('Cart.index'));
+    }
+
+    /**
      * Helper: get existing cart id for user or create a new one.
      */
     private function getOrCreateCartId(Connection $conn, int $userId): ?int

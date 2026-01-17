@@ -284,6 +284,8 @@
 // Wishlist module (from wishlist.js)
 // --------------------
 (function () {
+    // If the standalone wishlist.js already initialized, skip this embedded module to avoid duplicate bindings
+    if (window.__wishlist_loaded) return;
     if (!window.fetch) return;
 
     function postForm(url, fd) {

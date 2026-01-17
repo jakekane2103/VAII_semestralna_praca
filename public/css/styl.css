@@ -4,15 +4,40 @@
     font-family: "EB Garamond", serif;
 }
 
-.navbar {
-    position: sticky;
-    top: 0;
-    z-index: 1030; /* nad obsahom */
+/* Make a sticky header wrapper that contains both the navbar and mobile search */
+.sticky-header {
+    position: fixed !important; /* enforce fixed positioning */
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 2060; /* above most content; well above admin FAB */
+    background-color: #FEFCE9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+:root {
+    --header-height: 0px; /* updated by JS */
+}
+
+/* Ensure anchors and in-page jumps don't get hidden under the fixed header */
+html {
+    scroll-padding-top: var(--header-height, 120px);
+}
+
+/* Main content receives top padding equal to header height (via CSS variable)
+   fallback to 120px so content isn't hidden if JS hasn't run yet */
+#mainContent {
+    padding-top: var(--header-height, 120px);
+    transition: padding-top 0.15s ease;
+}
+
+/* Keep navbar visuals but let the sticky wrapper handle positioning */
+.sticky-header .navbar {
     border-bottom: 5px solid darkred;
     padding-top: 0; /* remove space above navbar content */
     padding-bottom: 0; /* remove space below navbar content */
     align-items: center; /* vertically center flex children */
-    background-color: #FEFCE9; /* set navbar background color as requested */
+    background-color: transparent; /* inherited from wrapper */
     font-weight: bold;
 }
 
@@ -41,20 +66,33 @@
 
 /* Specific sizes for the two logo parts so they appear as a single unit */
 .navbar-brand img.logo-symbol {
-    width: 100px; /* icon/symbol size */
-    height: auto;
-    display: block;
-}
-
-
-.navbar-brand img.logo-symbol {
     width: auto;
-    height: 70px; /* keeps aspect ratio */
+    max-height: 70px; /* keeps aspect ratio but allows scaling down */
 }
 
 .navbar-brand img.logo-name {
     width: auto;  /* automatically adjusts width if you set height */
-    height: 80px; /* sets a fixed height */
+    max-height: 80px; /* sets a max height but allows smaller screens to scale it down */
+}
+
+/* Reduce header logo sizes on small screens to avoid layout zooming in device emulation */
+@media (max-width: 576px) {
+    .navbar-brand img.logo-symbol { max-height: 48px; }
+    .navbar-brand img.logo-name { max-height: 52px; }
+    /* Reduce nav item spacing to fit smaller widths */
+    .nav-item { margin-left: 0.5rem; }
+    .navbar-nav .nav-link { font-size: 100%; }
+    /* Shrink nav icons on small screens */
+    .nav-link .icon { width: 36px; height: 36px; }
+    .nav-link .icon2 { width: 24px; height: 24px; margin-left: 6px; }
+}
+
+/* Extra small devices: hide verbose logo text and tighten spacing */
+@media (max-width: 420px) {
+    .navbar-brand img.logo-name { display: none; }
+    .navbar-brand img.logo-symbol { max-height: 44px; }
+    .nav-item { margin-left: 0.25rem; }
+    .navbar-nav .nav-link { padding-top: 0.15rem; padding-bottom: 0.15rem; }
 }
 
 .nav-item {
@@ -78,6 +116,12 @@
     background-color: #ff1111;
     border-color: #ff1111;
     color: #fff;
+}
+
+/* Ensure outline-danger shows red border and red text */
+.btn-outline-danger {
+    color: #ff1111;
+    border-color: #ff1111;
 }
 
 /* Hover: lighter shade of red only */
@@ -130,6 +174,7 @@
 
 .carousel {
     background-color: rgb(220, 220, 220); /* light gray for all carousels */
+    position: relative;
 }
 
 /* Make the "Bestsellery" title visually part of the carousel */
@@ -160,6 +205,36 @@
     border-left: 3px solid black; /* makes arrow shape */
     border-bottom: 3px solid black;
     transform: rotate(225deg);
+}
+
+/* Carousel controls: ensure arrows sit on the sides and are vertically centered */
+.carousel .carousel-control-prev,
+.carousel .carousel-control-next {
+    width: 3.5rem;
+    height: 3.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    border: none;
+}
+.carousel .carousel-control-prev { left: -1.25rem; }
+.carousel .carousel-control-next { right: -1.25rem; }
+
+@media (max-width: 768px) {
+    .carousel .carousel-control-prev { left: -0.5rem; }
+    .carousel .carousel-control-next { right: -0.5rem; }
+    .carousel .carousel-control-prev, .carousel .carousel-control-next { width: 2.6rem; height: 2.6rem; }
+}
+
+/* Slightly enlarge the control icons for better tap targets on touch */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-size: 60% 60%;
 }
 
 /* Zmenšené na veľmi malé obrazovky */
@@ -255,3 +330,43 @@
         flex: 0 0 auto;
     }
 }
+
+
+/* Interaction overrides: remove blue on click/tap but allow light-grey hover and keyboard focus ring */
+.dropdown-toggle,
+.dropdown-item,
+.navbar-nav .nav-link {
+    -webkit-tap-highlight-color: transparent; /* iOS/Android tap highlight */
+}
+
+/* Remove active/focus visual that turns items blue */
+.dropdown-toggle:active,
+.dropdown-toggle:focus,
+.dropdown-item:active,
+.dropdown-item:focus {
+    background-color: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Light grey on hover */
+.dropdown-item:hover {
+    background-color: rgba(0,0,0,0.06) !important; /* subtle light grey */
+    color: inherit !important;
+}
+
+/* Keep an accessible visible ring for keyboard users only */
+.dropdown-toggle:focus-visible,
+.dropdown-item:focus-visible,
+.navbar-nav .nav-link:focus-visible {
+    outline: 3px solid rgba(0,0,0,0.12);
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
+/* Optional: prevent the native highlight on iOS/Safari when tapping links */
+a { -webkit-tap-highlight-color: transparent; }
+
+/* End of interaction overrides */

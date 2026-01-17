@@ -1,71 +1,49 @@
-# INSERT INTO serie (name)
-# VALUES ('Malazan Book of the Fallen');
-
-INSERT INTO kniha
-(nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, series_id)
-VALUES
-
--- Malazan Book of the Fallen 1
-(
-    'Gardens of the Moon',
-    'Steven Erikson',
-    'The opening novel of the Malazan Book of the Fallen, introducing a vast world of gods, empires, and epic warfare.',
-    18.99,
-    'gardens_of_the_moon.jpg',
-    'pevná',
-    6,
-    '9780765310012',
-    (SELECT id FROM serie WHERE name = 'Malazan Book of the Fallen')
-),
-
--- Malazan Book of the Fallen 2
-(
-    'Deadhouse Gates',
-    'Steven Erikson',
-    'The second Malazan novel, following the brutal Chain of Dogs and the cost of empire and survival.',
-    19.99,
-    'deadhouse_gates.jpg',
-    'pevná',
-    5,
-    '9780765314294',
-    (SELECT id FROM serie WHERE name = 'Malazan Book of the Fallen')
-),
-
--- Malazan Book of the Fallen 3
-(
-    'Memories of Ice',
-    'Steven Erikson',
-    'A massive convergence of armies, gods, and ancient forces as old conflicts reach their climax.',
-    21.99,
-    'memories_of_ice.jpg',
-    'pevná',
-    4,
-    '9780765310036',
-    (SELECT id FROM serie WHERE name = 'Malazan Book of the Fallen')
-),
-
--- Malazan Book of the Fallen 4
-(
-    'House of Chains',
-    'Steven Erikson',
-    'The fourth installment shifts perspective, revealing the origins of a feared adversary and deepening the Malazan mythos.',
-    20.99,
-    'house_of_chains.jpg',
-    'pevná',
-    4,
-    '9780765315741',
-    (SELECT id FROM serie WHERE name = 'Malazan Book of the Fallen')
-),
-
--- Malazan Book of the Fallen 5
-(
-    'Midnight Tides',
-    'Steven Erikson',
-    'A new continent, new cultures, and the rise of empires as the Malazan saga expands its scope dramatically.',
-    22.99,
-    'midnight_tides.jpg',
-    'pevná',
-    3,
-    '9780765316519',
-    (SELECT id FROM serie WHERE name = 'Malazan Book of the Fallen')
-);
+# INSERT INTO kniha
+# (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, series_id)
+# VALUES
+#     (
+#         'The Silmarillion',
+#         'J. R. R. Tolkien',
+#         'A collection of mythological stories that form the foundation of Middle-earth, from the creation of the world to the end of the First Age.',
+#         34.99,
+#         'the_silmarillion',
+#         'pevná',
+#         7,
+#         '9780261102736',
+#         NULL
+#     );
+# INSERT INTO kniha
+# (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, series_id)
+# VALUES
+#     (
+#         'The Fall of Gondolin',
+#         'J. R. R. Tolkien',
+#         'One of the Great Tales of Middle-earth, telling the story of the hidden city of Gondolin and its tragic fall.',
+#         32.99,
+#         'the_fall_of_gondolin',
+#         'pevná',
+#         6,
+#         '9780008302757',
+#         NULL
+#     );
+# INSERT INTO kniha
+# (nazov, autor, popis, cena, obrazok, vazba, pocetNaSklade, isbn, series_id)
+# VALUES
+#     (
+#         'The Blade Itself',
+#         'Joe Abercrombie',
+#         'The first book in The First Law trilogy, introducing a grimdark world of brutal politics, flawed heroes, and sharp steel.',
+#         27.99,
+#         'the_blade_itself',
+#         'pevná',
+#         9,
+#         '9780575079793',
+#         (SELECT id FROM serie WHERE name = 'The First Law')
+#     );
+UPDATE kniha
+SET obrazok = CONCAT(obrazok, '.jpg')
+WHERE nazov IN (
+                'The Silmarillion',
+                'The Fall of Gondolin',
+                'The Blade Itself'
+    );

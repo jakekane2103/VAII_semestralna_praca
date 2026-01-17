@@ -54,21 +54,62 @@ class BooksController extends BaseController
             $authorFilter = $q; // we treat q as exact author name for header
         }
 
+        // Pagination: page parameter 'p', default 1, 21 items per page
+        $pageRaw = $request->get('p');
+        $page = 1;
+        if ($pageRaw !== null && ctype_digit((string)$pageRaw)) {
+            $page = max(1, (int)$pageRaw);
+        }
+        $perPage = 21;
+
         $conn = Connection::getInstance();
 
+        // Use SQL COUNT and LIMIT/OFFSET to fetch only the requested page
         if ($q === '') {
-            // No search term -> return all books (limited to reasonable count)
-            $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name FROM kniha b LEFT JOIN serie s ON b.series_id = s.id ORDER BY b.nazov LIMIT 200");
+            // No search term -> count all books
+            $countStmt = $conn->prepare('SELECT COUNT(*) FROM kniha');
+            $countStmt->execute();
+            $totalBooks = (int)$countStmt->fetchColumn();
+
+            $totalPages = (int)max(1, ceil($totalBooks / $perPage));
+            if ($page > $totalPages) $page = $totalPages;
+            $offset = ($page - 1) * $perPage;
+
+            $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
+                    FROM kniha b
+                    LEFT JOIN serie s ON b.series_id = s.id
+                    ORDER BY b.nazov
+                    LIMIT :limit OFFSET :offset";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
             $stmt->execute();
         } else {
             // Search by nazov, autor or seria (case-insensitive by DB collation)
+            $countSql = "SELECT COUNT(*)
+                         FROM kniha b
+                         LEFT JOIN serie s ON b.series_id = s.id
+                         WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q";
+            $countStmt = $conn->prepare($countSql);
+            $like = '%' . $q . '%';
+            $countStmt->execute([':q' => $like]);
+            $totalBooks = (int)$countStmt->fetchColumn();
+
+            $totalPages = (int)max(1, ceil($totalBooks / $perPage));
+            if ($page > $totalPages) $page = $totalPages;
+            $offset = ($page - 1) * $perPage;
+
             $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
                     FROM kniha b
                     LEFT JOIN serie s ON b.series_id = s.id
                     WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q
-                    ORDER BY b.nazov LIMIT 200";
+                    ORDER BY b.nazov
+                    LIMIT :limit OFFSET :offset";
             $stmt = $conn->prepare($sql);
-            $stmt->execute([':q' => '%' . $q . '%']);
+            $stmt->bindValue(':q', $like, \PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            $stmt->execute();
         }
 
         $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -92,8 +133,13 @@ class BooksController extends BaseController
             'books'        => $books,
             'q'            => $q,
             'authorFilter' => $authorFilter,
+            'authorFlag'   => $authorFlag,
             'wishlistMap'  => $wishlistMap,
             'series'       => $series,
+            'page'         => $page,
+            'totalPages'   => $totalPages,
+            'perPage'      => $perPage,
+            'totalBooks'   => $totalBooks,
         ]);
     }
 

@@ -24,32 +24,45 @@ include __DIR__ . '/../Auth/loginModal.php';
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="<?= $link->asset('css/styl.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?= $link->asset('css/account.css') ?>">
 
     <script src="<?= $link->asset('js/auth.js') ?>"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-<?php if ($auth?->isLogged()): ?>
-    <script>
-        (function () {
-            // Compute home URL server-side and compare to current location client-side
-            var home = <?= json_encode($link->url('home.index')) ?>;
-            try {
-                var homeUrl = new URL(home, window.location.origin);
-                var curUrl = new URL(window.location.href);
-                // Only redirect if we're not already at the home URL (path or query differ)
-                if (curUrl.pathname !== homeUrl.pathname || curUrl.search !== homeUrl.search) {
-                    window.location.replace(homeUrl.href);
-                }
-            } catch (e) {
-                // Fallback: simple comparison
-                if (window.location.href !== home) {
-                    window.location.replace(home);
-                }
-            }
-        })();
-    </script>
-<?php endif; ?>
+<?php
+// Build navbar user HTML once to avoid mixed PHP/HTML parsing issues in templates
+$userNavHtml = '';
+if ($auth?->isLogged()) {
+    $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
+    if ($isAdmin) {
+        // For admin: do not show an account dropdown. Clicking the account will log out.
+        $userNavHtml .= '<li class="nav-item">';
+        $userNavHtml .= '<a class="nav-link d-flex align-items-center" href="' . $link->url('auth.logout') . '">';
+        $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="account" class="icon2 me-1 w-10"> ' . ($auth?->user?->name ?? '') . '</a>';
+        $userNavHtml .= '</li>';
+        $userNavHtml .= '<li class="nav-item"><a class="btn btn-outline-success" href="' . $link->url('admin.index') . '">ADMIN PANEL</a></li>';
+    } else {
+        $userNavHtml .= '<li class="nav-item dropdown">';
+        $userNavHtml .= '<a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">';
+        $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="account" class="icon2 me-1 w-10"> ' . ($auth?->user?->name ?? '') . '<' . '/a>';
+        $userNavHtml .= '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">';
+        $userNavHtml .= '<li><a class="dropdown-item" href="' . $link->url('Account.index') . '">Upraviť údaje</a></li>';
+        $userNavHtml .= '<li><hr class="dropdown-divider"></li>';
+        $userNavHtml .= '<li><a class="dropdown-item" href="' . $link->url('auth.logout') . '">Odhlásiť</a></li>';
+        $userNavHtml .= '<' . '/ul>' . '<' . '/li>';
+        $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" href="' . $link->url('wishlist.index') . '">';
+        $userNavHtml .= '<img src="' . $link->asset('images/wishlistIconRed.png') . '" alt="wish" class="icon2 me-1 w-10">' . '<' . '/a>' . '<' . '/li>';
+        $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" href="' . $link->url('cart.index') . '">';
+        $userNavHtml .= '<img src="' . $link->asset('images/cartIcon.png') . '" alt="cart" class="icon2 me-1 w-10">' . '<' . '/a>' . '<' . '/li>';
+    }
+} else {
+    $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="' . $link->url('auth.loginModal') . '">';
+    $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="login" class="icon2 me-1 w-10"> Prihlásiť' . '<' . '/a>' . '<' . '/li>';
+    $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" href="' . $link->url('cart.index') . '">';
+    $userNavHtml .= '<img src="' . $link->asset('images/cartIcon.png') . '" alt="cart" class="icon2 me-1 w-10">' . '<' . '/a>' . '<' . '/li>';
+}
+?>
 
 <nav class="navbar navbar-expand-md">
     <div class="container-fluid">
@@ -67,25 +80,77 @@ include __DIR__ . '/../Auth/loginModal.php';
             <span class="navbar-toggler-icon"></span>
         </button>
 
-            <ul class="navbar-nav">
-                <?php if ($auth?->isLogged()) { ?>
+        <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
 
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('home.index') ?>">
+                        <img src="<?= $link->asset('images/homeIcon2.png') ?>" alt="Domov" class="icon me-1 w-10"> Domov
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('books.index') ?>">
+                        <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="Knihy" class="icon me-1 w-10"> Knihy
+                    </a>
+                </li>
+            </ul>
+
+            <!-- DESKTOP SEARCH BAR -->
+            <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
+                  method="GET" action="<?= $link->url('books.index', [], true) ?>">
+                <label for="desktop-search-input" class="visually-hidden">Hľadať knihy</label>
+                <input type="hidden" name="c" value="books">
+                <input type="hidden" name="a" value="index">
+                <input id="desktop-search-input" class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <button class="btn btn-outline-success" type="submit">Hľadať</button>
+            </form>
+
+            <ul class="navbar-nav">
+                <?php if ($auth?->isLogged()) {
+                    $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
+                    if ($isAdmin) { ?>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-success" href="<?= $link->url('admin.index') ?>">
+                                ADMIN PANEL
+                            </a>
+                        </li>
+                    <?php } else { ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
+                                <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                                <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                            </a>
+                        </li>
+                    <?php }
+                } else { ?>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
-                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                        <a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="<?= $link->url('auth.loginModal') ?>">
+                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
                         </a>
                     </li>
-                <?php } else { ?>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center"
-                           data-bs-toggle="modal" data-bs-target="#loginModal"
-                           href="<?= $link->url('auth.loginModal') ?>">
-                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                            <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
                         </a>
                     </li>
                 <?php } ?>
             </ul>
         </div>
+
     </div>
 </nav>
 

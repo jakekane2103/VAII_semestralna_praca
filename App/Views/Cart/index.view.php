@@ -73,7 +73,7 @@ $total = 0;
                 <h4 class="fw-bold mb-0"><?= number_format($total, 2) ?> €</h4>
             </div>
 
-            <a href="#" class="btn btn-danger btn-lg mt-2">Pokračovať k platbe</a>
+            <a href="<?= $link->url('Cart.checkout') ?>" class="btn btn-danger btn-lg mt-2">Pokračovať k platbe</a>
         </div>
 
     <?php else: ?>

@@ -11,6 +11,8 @@ include __DIR__ . '/../Auth/loginModal.php';
 <html lang="sk">
 <head>
     <title><?= App\Configuration::APP_NAME ?></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Favicons -->
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
@@ -26,126 +28,135 @@ include __DIR__ . '/../Auth/loginModal.php';
     <link rel="stylesheet" href="<?= $link->asset('css/books.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/cart.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/bookDetail.css') ?>">
+    <link rel="stylesheet" href="<?= $link->asset('css/account.css') ?>">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="<?= $link->asset('js/auth.js') ?>"></script>
+    <script src="<?= $link->asset('js/wishlist.js') ?>"></script>
     <script src="<?= $link->asset('js/cart.js') ?>"></script>
     <script src="<?= $link->asset('js/books.js') ?>"></script>
     <script src="<?= $link->asset('js/admin.js') ?>"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
-<nav class="navbar navbar-expand-md">
-    <div class="container-fluid">
+<header class="sticky-header">
+    <nav class="navbar navbar-expand-md">
+        <div class="container-fluid">
 
-        <!-- Logo -->
-        <a class="navbar-brand" href="<?= $link->url('home.index') ?>">
-            <img class="logo logo-symbol" src="<?= $link->asset('images/kaneVeritasLogoSymbol.png') ?>" alt="">
-            <img class="logo logo-name" src="<?= $link->asset('images/kaneVeritasLogoName.png') ?>" alt="">
-        </a>
+            <!-- Logo -->
+            <a class="navbar-brand" href="<?= $link->url('home.index') ?>">
+                <img class="logo logo-symbol" src="<?= $link->asset('images/kaneVeritasLogoSymbol.png') ?>" alt="">
+                <img class="logo logo-name" src="<?= $link->asset('images/kaneVeritasLogoName.png') ?>" alt="">
+            </a>
 
-        <!-- Hamburger -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar" aria-controls="mainNavbar"
-                aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            <!-- Hamburger -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-        <!-- Collapsible menu -->
-        <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
+            <!-- Collapsible menu -->
+            <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
 
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('home.index') ?>">
-                        <img src="<?= $link->asset('images/homeIcon2.png') ?>" alt="Domov" class="icon me-1 w-10"> Domov
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center" href="<?= $link->url('books.index') ?>">
-                        <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="Knihy" class="icon me-1 w-10"> Knihy
-                    </a>
-
-                </li>
-            </ul>
-
-            <!-- DESKTOP SEARCH BAR -->
-            <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
-                  method="GET" action="<?= $link->url('books.index', [], true) ?>">
-                <label for="desktop-search-input" class="visually-hidden">Hľadať knihy</label>
-                <input type="hidden" name="c" value="books">
-                <input type="hidden" name="a" value="index">
-                <input id="desktop-search-input" class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                <button class="btn btn-outline-success" type="submit">Hľadať</button>
-            </form>
-
-            <ul class="navbar-nav">
-                <?php if ($auth?->isLogged()) {
-                    $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
-                    if ($isAdmin) { ?>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
-                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="btn btn-outline-success" href="<?= $link->url('admin.index') ?>">
-                                ADMIN PANEL
-                            </a>
-                        </li>
-                    <?php } else { ?>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
-                                <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
-                                <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
-                                <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
-                            </a>
-                        </li>
-                    <?php }
-                } else { ?>
+                <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="<?= $link->url('auth.loginModal') ?>">
-                            <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('home.index') ?>">
+                            <img src="<?= $link->asset('images/homeIcon2.png') ?>" alt="Domov" class="icon me-1 w-10"> Domov
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
-                            <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                        <a class="nav-link d-flex align-items-center" href="<?= $link->url('books.index') ?>">
+                            <img src="<?= $link->asset('images/booksIcon.png') ?>" alt="Knihy" class="icon me-1 w-10"> Knihy
                         </a>
+
                     </li>
-                <?php } ?>
-            </ul>
+                </ul>
+
+                <!-- DESKTOP SEARCH BAR -->
+                <form class="d-none d-md-flex flex-grow-1 mx-3 mt-3" role="search"
+                      method="GET" action="<?= $link->url('books.index', [], true) ?>">
+                    <label for="desktop-search-input" class="visually-hidden">Hľadať knihy</label>
+                    <input type="hidden" name="c" value="books">
+                    <input type="hidden" name="a" value="index">
+                    <input id="desktop-search-input" class="form-control me-2" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                    <button class="btn btn-outline-success" type="submit">Hľadať</button>
+                </form>
+
+                <ul class="navbar-nav">
+                    <?php if ($auth?->isLogged()) {
+                        $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
+                        if ($isAdmin) { ?>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="<?= $link->url('auth.logout') ?>">
+                                    <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="btn btn-outline-success" href="<?= $link->url('admin.index') ?>">
+                                    ADMIN PANEL
+                                </a>
+                            </li>
+                         <?php } else { ?>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <img src="<?= $link->asset('images/iconMan.png') ?>" alt="account" class="icon2 me-1 w-10"> <?= $auth?->user?->name ?>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" href="<?= $link->url('Account.index') ?>">Upraviť údaje</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="<?= $link->url('auth.logout') ?>">Odhlásiť</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="<?= $link->url('wishlist.index') ?>">
+                                    <img src="<?= $link->asset('images/wishlistIconRed.png') ?>" alt="wish" class="icon2 me-1 w-10">
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                                    <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                                </a>
+                            </li>
+                         <?php }
+                     } else { ?>
+                         <li class="nav-item">
+                             <a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="<?= $link->url('auth.loginModal') ?>">
+                                 <img src="<?= $link->asset('images/iconMan.png') ?>" alt="login" class="icon2 me-1 w-10"> Prihlásiť
+                             </a>
+                         </li>
+                         <li class="nav-item">
+                             <a class="nav-link d-flex align-items-center" href="<?= $link->url('cart.index') ?>">
+                                 <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="cart" class="icon2 me-1 w-10">
+                             </a>
+                         </li>
+                     <?php } ?>
+                </ul>
+            </div>
+
         </div>
 
-    </div>
-
-    <!-- MOBILE search bar under navbar -->
-    <div class="navbar-search-mobile d-md-none px-3 py-2 w-100">
-        <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index', [], true) ?>">
-            <label for="mobile-search-input" class="visually-hidden">Hľadať knihy</label>
-            <input type="hidden" name="c" value="books">
-            <input type="hidden" name="a" value="index">
-            <input id="mobile-search-input" class="form-control me-2 flex-grow-1" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
-            <button class="btn btn-success" type="submit">Hľadať</button>
-        </form>
-    </div>
-</nav>
-
+        <!-- MOBILE search bar under navbar -->
+        <div class="navbar-search-mobile d-md-none px-3 py-2 w-100">
+            <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index', [], true) ?>">
+                <label for="mobile-search-input" class="visually-hidden">Hľadať knihy</label>
+                <input type="hidden" name="c" value="books">
+                <input type="hidden" name="a" value="index">
+                <input id="mobile-search-input" class="form-control me-2 flex-grow-1" type="search" name="q" placeholder="Hľadať knihy" value="<?= htmlspecialchars($q ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <button class="btn btn-success" type="submit">Hľadať</button>
+            </form>
+        </div>
+    </nav>
+</header>
 
 
-<div class="container-fluid mt-3 flex-grow-1">
-    <div class="web-content">
-        <?= $contentHTML ?>
-    </div>
-</div>
 
-<footer class="site-footer py-4 mt-auto w-100">
+<div id="mainContent" class="container-fluid flex-grow-1">
+     <div class="web-content">
+         <?= $contentHTML ?>
+     </div>
+ </div>
+
+ <footer class="site-footer py-4 mt-auto w-100">
     <div class="container">
         <div class="row text-start">
 
@@ -208,5 +219,6 @@ include __DIR__ . '/../Auth/loginModal.php';
      </div>
  </footer>
 
- </body>
+    <script src="<?= $link->asset('js/script.js') ?>"></script>
+</body>
  </html>

@@ -96,15 +96,20 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                             <?php
                             $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '';
                             $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
-                            $isIn = !empty($inWishlist);
+                            // Normalize wishlist flag to a proper boolean (handles '0', 'false', etc.)
+                            $isIn = filter_var($inWishlist ?? false, FILTER_VALIDATE_BOOLEAN);
+                            $btnClass = $isIn ? 'btn btn-danger px-4 btn-wishlist' : 'btn btn-outline-danger px-4 btn-wishlist';
+                            $iconOn = $link->asset('images/wishlistIconRed-outlineWhite.png');
+                            $iconOff = $link->asset('images/wishlistIconWhite.png');
                             ?>
                             <?php if (!($isAdmin ?? false)) { ?>
                             <!-- Wishlist button, same CSS as cart and to its left (hidden for admin) -->
                             <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
                                 <input type="hidden" name="id" value="<?= $bookId ?>">
-                                <button type="submit" role="button" class="btn btn-primary px-4 btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
-                                        data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>">
-                                    <img src="<?= $link->asset('images/wishlistIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                <button type="submit" role="button" class="<?= $btnClass ?>" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
+                                        data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>"
+                                        data-icon-on="<?= $iconOn ?>" data-icon-off="<?= $iconOff ?>">
+                                    <img src="<?= $link->asset($isIn ? 'images/wishlistIconRed-outlineWhite.png' : 'images/wishlistIconWhite.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
                                     <span class="visually-hidden">Pridať do wishlistu</span>
                                 </button>
                             </form>
@@ -128,4 +133,5 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
 
 <script>
   window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
+  window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;
 </script>
