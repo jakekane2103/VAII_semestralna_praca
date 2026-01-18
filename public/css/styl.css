@@ -16,8 +16,6 @@
 }
 
 :root {
-    /* Provide a conservative default header height so content doesn't jump while JS measures it.
-       The JS will overwrite this value with the actual header height as soon as it runs. */
     --header-height: 120px; /* was 0px, changed to avoid layout shift on initial render */
 }
 
