@@ -2,11 +2,8 @@
 .account-form {
     max-width: 640px;
     margin: 0 auto; /* center inside container */
-    background-color: #f8f9fa; /* soft grey matching books/wishlist */
+    background-color: #ffffff; /* soft grey matching books/wishlist */
     padding: 1.25rem 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
-    border: 1px solid rgba(0,0,0,0.03);
 }
 
 /* Make labels slightly bolder */

@@ -148,7 +148,20 @@ include __DIR__ . '/../Auth/loginModal.php';
     </nav>
 </header>
 
-
+<!-- Inline synchronous header-height setter to avoid layout shift/twitch on load -->
+<script>
+    (function(){
+        try {
+            var header = document.querySelector('.sticky-header');
+            if (!header) return;
+            // Measure immediately and set CSS variable so #mainContent padding is correct
+            var h = Math.ceil(header.getBoundingClientRect().height || 0);
+            if (h > 0) document.documentElement.style.setProperty('--header-height', h + 'px');
+        } catch (e) {
+            // silent
+        }
+    })();
+</script>
 
 <div id="mainContent" class="container-fluid flex-grow-1">
      <div class="web-content">

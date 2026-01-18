@@ -55,10 +55,34 @@ class AuthController extends BaseController
         $password = (string)$request->value('password');
         $ok = $this->app->getAuth()->login($username, $password);
         if ($ok) {
-            // Redirect back to referer so navbar updates; fallback to home
+            // Redirect back to referer so navbar updates; but if referer is an auth page, send to home instead
             $referer = $request->server('HTTP_REFERER');
             if ($referer && is_string($referer) && $referer !== '') {
-                return $this->redirect($referer);
+                // Heuristics: if referer looks like an auth area URL (query c=auth, path contains /auth, or contains known auth routes), treat it as auth and ignore it
+                $isAuthReferer = false;
+                try {
+                    $query = parse_url($referer, PHP_URL_QUERY) ?: '';
+                    parse_str($query, $qs);
+                    if (isset($qs['c']) && strtolower((string)$qs['c']) === 'auth') {
+                        $isAuthReferer = true;
+                    }
+
+                    $path = parse_url($referer, PHP_URL_PATH) ?: '';
+                    if (!$isAuthReferer && stripos($path, '/auth') !== false) {
+                        $isAuthReferer = true;
+                    }
+
+                    // also check for route identifiers that may be embedded in friendly URLs
+                    if (!$isAuthReferer && (stripos($referer, 'auth.login') !== false || stripos($referer, 'auth.signUp') !== false || stripos($referer, 'auth.loginModal') !== false)) {
+                        $isAuthReferer = true;
+                    }
+                } catch (\Throwable $e) {
+                    // if URL parsing fails, fall back to safe behavior
+                }
+
+                if (!$isAuthReferer) {
+                    return $this->redirect($referer);
+                }
             }
             return $this->redirect($this->url('home.index'));
         }

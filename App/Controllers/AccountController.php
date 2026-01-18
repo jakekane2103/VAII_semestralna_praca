@@ -6,6 +6,7 @@ use Framework\Core\BaseController;
 use Framework\DB\Connection;
 use Framework\Http\Request;
 use Framework\Http\Responses\Response;
+use App\Models\User;
 
 class AccountController extends BaseController
 {
@@ -138,12 +139,33 @@ class AccountController extends BaseController
 
             if ($ok) {
                 $this->app->getSession()->set('account_success', 'Údaje boli úspešne uložené.');
+
+                // Refresh authenticated identity so navbar updates immediately
+                try {
+                    $auth = $this->app->getAuth();
+                    if ($auth) {
+                        $identity = $auth->getUser();
+                        if ($identity instanceof User) {
+                            // Update name and username/email on the identity object
+                            // Keep compatibility with existing behavior (name was previously first name)
+                            $identity->setName($meno);
+                            $identity->setUsername($email);
+
+                            // Persist updated identity into session so getUser() and future requests reflect changes
+                            $this->app->getSession()->set('user', $identity);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // don't block the success flow; optionally log
+                    error_log('[Account.update] refresh identity failed: ' . $e->getMessage());
+                }
+
             } else {
-                $this->app->getSession()->set('account_error', 'Ukladanie zlyhalo.');
+                $this->app->getSession()->set('account_error', 'Nastala chyba pri ukladaní údajov.');
             }
         } catch (\Throwable $e) {
+            $this->app->getSession()->set('account_error', 'Nastala neočakávaná chyba.');
             error_log('[Account.update] ' . $e->getMessage());
-            $this->app->getSession()->set('account_error', 'Pri ukladaní nastala chyba.');
         }
 
         return $this->redirect($this->url('Account.index'));

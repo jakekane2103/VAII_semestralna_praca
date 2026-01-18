@@ -5,16 +5,7 @@
 /** @var float $total */
 /** @var int $totalQty */
 
-// Use session for lightweight flash messages (controller sets these keys)
-$orderSuccess = $_SESSION['order_success'] ?? null;
-$orderError = $_SESSION['order_error'] ?? null;
-// clear flash after reading
-if ($orderSuccess) {
-    unset($_SESSION['order_success']);
-}
-if ($orderError) {
-    unset($_SESSION['order_error']);
-}
+// NOTE: removed session flash handling and toast markup from this view so user sees the confirmation on Cart/index after redirect.
 ?>
 
 <div class="container my-5 w-75 bg-light p-4">
@@ -87,3 +78,4 @@ if ($orderError) {
         </div>
     </div>
 </div>
+

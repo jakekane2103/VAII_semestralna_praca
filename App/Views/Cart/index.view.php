@@ -4,6 +4,12 @@
 /** @var array $items */
 
 $total = 0;
+
+// Read flash messages (controller sets these via session) and clear them so they only show once
+$orderSuccess = $_SESSION['order_success'] ?? null;
+$orderError = $_SESSION['order_error'] ?? null;
+if ($orderSuccess) { unset($_SESSION['order_success']); }
+if ($orderError) { unset($_SESSION['order_error']); }
 ?>
 
 <div class="container my-5 w-50 bg-light p-4">
@@ -80,3 +86,35 @@ $total = 0;
         <p>Košík je prázdny.</p>
     <?php endif; ?>
 </div>
+
+
+<!-- Toast container for success/error messages (shows after placeOrder redirect) -->
+<div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="orderToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="orderToastBody"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<?php if ($orderSuccess || $orderError): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastEl = document.getElementById('orderToast');
+            var bodyEl = document.getElementById('orderToastBody');
+            <?php if ($orderSuccess): ?>
+                bodyEl.textContent = <?= json_encode(is_string($orderSuccess) ? $orderSuccess : 'Objednávka úspešná') ?>;
+                toastEl.classList.remove('text-bg-danger');
+                toastEl.classList.add('text-bg-success');
+            <?php else: ?>
+                bodyEl.textContent = <?= json_encode(is_string($orderError) ? $orderError : 'Pri objednávke nastala chyba') ?>;
+                toastEl.classList.remove('text-bg-success');
+                toastEl.classList.add('text-bg-danger');
+            <?php endif; ?>
+
+            var toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 3000 });
+            toast.show();
+        });
+    </script>
+<?php endif; ?>

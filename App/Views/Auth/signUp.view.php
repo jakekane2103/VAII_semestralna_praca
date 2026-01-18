@@ -6,7 +6,7 @@ $view->setLayout('auth');
 ?>
 
 <div class="container mt-4 mb-5" style="max-width: 600px;">
-    <div class="card p-4 shadow-sm">
+    <div class="card p-4 shadow-sm no-hover">
         <h3 class="mb-4 text-center">Registrácia</h3>
 
         <?php if (!empty($message)): ?>

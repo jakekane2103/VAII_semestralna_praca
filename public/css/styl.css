@@ -16,7 +16,9 @@
 }
 
 :root {
-    --header-height: 0px; /* updated by JS */
+    /* Provide a conservative default header height so content doesn't jump while JS measures it.
+       The JS will overwrite this value with the actual header height as soon as it runs. */
+    --header-height: 120px; /* was 0px, changed to avoid layout shift on initial render */
 }
 
 /* Ensure anchors and in-page jumps don't get hidden under the fixed header */
@@ -28,7 +30,16 @@ html {
    fallback to 120px so content isn't hidden if JS hasn't run yet */
 #mainContent {
     padding-top: var(--header-height, 120px);
-    transition: padding-top 0.15s ease;
+    transition: none; /* removed animated padding change to prevent twitch on load */
+}
+
+/* Ensure layouts that do NOT use #mainContent still get offset below the fixed header
+   (e.g. auth.layout uses a direct .container-fluid after the header). We explicitly exclude
+   #mainContent so we don't double-up the padding there. */
+.sticky-header + .container-fluid:not(#mainContent),
+.sticky-header + .container:not(#mainContent) {
+    /* halve the header-height so the padding is smaller */
+    padding-top: calc(var(--header-height, 120px) / 2);
 }
 
 /* Keep navbar visuals but let the sticky wrapper handle positioning */
@@ -370,3 +381,47 @@ html {
 a { -webkit-tap-highlight-color: transparent; }
 
 /* End of interaction overrides */
+
+/* Fallback hamburger icon (uses inline SVG) to ensure visibility when Bootstrap's default isn't applied */
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='currentColor' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+/* Disable hover visuals for cards that opt-out via the .no-hover class */
+.card.no-hover:hover {
+    box-shadow: none !important;
+    background-color: inherit !important;
+}
+
+/* Force a solid white background for no-hover cards so they don't show a faint grey */
+.card.no-hover {
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact; /* ensure color consistency */
+    box-shadow: none !important; /* remove faint shadow to avoid appearing as a grey panel */
+}
+
+/* Also ensure card body areas don't show a subtle grey from other global rules */
+.card.no-hover .card-body,
+.card.no-hover .card-footer {
+    background-color: transparent !important;
+}
+
+/* Ensure form controls inside the no-hover card have solid white backgrounds */
+.card.no-hover .form-control {
+    background-color: #ffffff !important;
+}
+
+@media (max-width: 576px) {
+    /* Give auth/signup/account containers more breathing room on small screens */
+    .container.mt-4.mb-5 {
+        margin-top: 2.5rem !important; /* larger gap from header */
+        margin-bottom: 2.5rem !important; /* more space below */
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Slightly increase card padding so content isn't cramped */
+    .card.no-hover {
+        padding: 1.25rem !important;
+    }
+}

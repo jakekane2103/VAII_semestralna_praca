@@ -78,10 +78,16 @@ html, body {
     width: 100vw;
     margin-left: 50%;
     transform: translateX(-50%);
-    margin-top: -1.5rem;
+    margin-top: 0; /* was -1.5rem */
     margin-bottom: 2rem;
     padding: 1.25rem 4vw;
     border-bottom: 1px solid rgba(0,0,0,0.05);
+
+    /* Ensure when the element is scrolled into view (anchors/focus) it's offset by the header height */
+    scroll-margin-top: calc(var(--header-height, 120px) + 8px);
+
+    /* Small extra top padding so content doesn't appear flush under the header on some browsers */
+    padding-top: calc(1.25rem + 0.5rem);
 }
 
 .authorFoundBooks h3 {

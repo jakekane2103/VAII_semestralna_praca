@@ -253,3 +253,32 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
         window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;
     </script>
 </div>
+
+<?php if (!empty($authorFilter)): ?>
+    <script>
+        // Fallback offset scroll: ensure .authorFoundBooks is visible below the sticky header
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var el = document.querySelector('.authorFoundBooks');
+                if (!el) return;
+                // get computed header height from CSS variable or measure header
+                var headerHeight = 0;
+                var computed = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
+                if (computed) {
+                    var parsed = parseInt(computed.trim());
+                    if (!isNaN(parsed)) headerHeight = parsed;
+                }
+                if (!headerHeight) {
+                    var header = document.querySelector('.sticky-header');
+                    if (header) headerHeight = Math.ceil(header.getBoundingClientRect().height || 0);
+                }
+                // small extra offset so the element isn't flush with the header
+                var extra = 8;
+                var top = el.getBoundingClientRect().top + window.scrollY - headerHeight - extra;
+                window.scrollTo({ top: Math.max(0, top), behavior: 'instant' in document.documentElement ? 'instant' : 'auto' });
+            } catch (e) {
+                // ignore
+            }
+        });
+    </script>
+<?php endif; ?>
