@@ -30,6 +30,7 @@ include __DIR__ . '/../Auth/loginModal.php';
     <link rel="stylesheet" href="<?= $link->asset('css/books.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/cart.css') ?>">
     <link rel="stylesheet" href="<?= $link->asset('css/bookDetail.css') ?>">
+    <link rel="stylesheet" href="<?= $link->asset('css/auth.css') ?>">
 
     <script src="<?= $link->asset('js/auth.js') ?>"></script>
     <script src="<?= $link->asset('js/wishlist.js') ?>"></script>

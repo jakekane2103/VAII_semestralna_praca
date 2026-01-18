@@ -1,0 +1,45 @@
+
+/* Disable hover visuals for cards that opt-out via the .no-hover class */
+.card.no-hover:hover {
+    box-shadow: none !important;
+    background-color: inherit !important;
+}
+.card.no-hover:hover .book-cover {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Force a solid white background for no-hover cards so they don't show a faint grey */
+.card.no-hover {
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact; /* ensure color consistency */
+    box-shadow: none !important; /* remove faint shadow to avoid appearing as a grey panel */
+}
+
+/* Also ensure card body areas don't show a subtle grey from other global rules */
+.card.no-hover .card-body,
+.card.no-hover .card-footer {
+    background-color: transparent !important;
+}
+
+/* Ensure form controls inside the no-hover card have solid white backgrounds */
+.card.no-hover .form-control {
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+/* Small-screen spacing for auth containers */
+@media (max-width: 576px) {
+    /* Keep same behavior as before: auth pages are less cramped on mobile */
+    .container.mt-4.mb-5 {
+        margin-top: 2.5rem !important;
+        margin-bottom: 2.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .card.no-hover {
+        padding: 1.25rem !important;
+    }
+}
+

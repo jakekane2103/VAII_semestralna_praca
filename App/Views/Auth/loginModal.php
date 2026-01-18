@@ -18,7 +18,7 @@ $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authE
 ?>
 
     <!-- LOGIN MODAL -->
-<div class="modal fade" id="loginModal" tabindex="-1">
+<div class="modal fade" id="loginModal" tabindex="-1"<?= $shouldOpen ? ' data-open="1"' : '' ?>>
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -63,16 +63,4 @@ $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authE
     </div>
 </div>
 
-<?php if ($shouldOpen): ?>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        try {
-            var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
-        } catch (e) {
-            // bootstrap not available or other error
-            console.error(e);
-        }
-    });
-</script>
-<?php endif; ?>
+<?php
