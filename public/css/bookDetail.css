@@ -24,7 +24,6 @@
     font-weight: 500;
 }
 
-
 /* ===== Prevent the book-detail container/card from being hoverable ===== */
 /* Ensure the card itself doesn't change on hover/focus/active */
 .page-book-detail .book-detail-card,
