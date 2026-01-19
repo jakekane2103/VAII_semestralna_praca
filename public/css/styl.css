@@ -233,13 +233,33 @@ html {
     box-shadow: 0 2px 6px rgba(0,0,0,.12);
     border: none;
 }
-.carousel .carousel-control-prev { left: -1.25rem; }
-.carousel .carousel-control-next { right: -1.25rem; }
+.carousel .carousel-control-prev { left: 0.75rem; }
+.carousel .carousel-control-next { right: 0.75rem; }
 
 @media (max-width: 768px) {
-    .carousel .carousel-control-prev { left: -0.5rem; }
-    .carousel .carousel-control-next { right: -0.5rem; }
-    .carousel .carousel-control-prev, .carousel .carousel-control-next { width: 2.6rem; height: 2.6rem; }
+    /* move controls well outside carousel on small screens */
+    .carousel { overflow: visible; }
+    .carousel .carousel-control-prev { left: -3.5rem; }
+    .carousel .carousel-control-next { right: -3.5rem; }
+    .carousel .carousel-control-prev, .carousel .carousel-control-next {
+        width: 3.4rem;
+        height: 3.4rem;
+        z-index: 999;
+        touch-action: manipulation;
+    }
+}
+
+@media (max-width: 480px) {
+    /* extra-small: place arrows further off the carousel so they don't overlap thumbnails */
+    .carousel { overflow: visible; }
+    .carousel .carousel-control-prev { left: -5rem; }
+    .carousel .carousel-control-next { right: -5rem; }
+    .carousel .carousel-control-prev, .carousel .carousel-control-next {
+        width: 3.6rem;
+        height: 3.6rem;
+        z-index: 999;
+        touch-action: manipulation;
+    }
 }
 
 /* Slightly enlarge the control icons for better tap targets on touch */

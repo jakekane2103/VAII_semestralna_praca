@@ -28,7 +28,13 @@ class CartController extends BaseController
      */
     public function authorize(Request $request, string $action): bool
     {
-        // Require logged-in user for all cart actions
+        // Allow guest access to viewing and adding to cart (session-based). Other actions require login.
+        $a = strtolower((string)$action);
+        if (in_array($a, ['index', 'add', 'checkout'], true)) {
+            return true;
+        }
+
+        // Require logged-in user for all other cart actions
         return $this->app->getAuth() !== null && $this->app->getAuth()->isLogged();
     }
 
@@ -56,6 +62,36 @@ class CartController extends BaseController
             $stmt = $conn->prepare($sql);
             $stmt->execute([':uid' => $user->getId()]);
             $items = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        } else {
+            // Guest: load cart from session
+            $session = $this->app->getSession();
+            $cart = $session->get('cart', []);
+            if (!empty($cart)) {
+                $conn = Connection::getInstance();
+                // sanitize ids and preserve order
+                $ids = array_values(array_unique(array_filter(array_keys($cart), function ($v) { return ctype_digit((string)$v) || is_int($v); })));
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $sql = "SELECT id_kniha AS id, nazov, autor, obrazok, cena FROM kniha WHERE id_kniha IN ($placeholders)";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute($ids);
+                    $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                    $byId = [];
+                    foreach ($rows as $r) {
+                        $byId[(string)$r['id']] = $r;
+                    }
+                    foreach ($ids as $id) {
+                        $key = (string)$id;
+                        if (isset($byId[$key])) {
+                            $row = $byId[$key];
+                            $row['mnozstvo'] = (int)($cart[$key] ?? $cart[(int)$key] ?? 1);
+                            // normalize id key name to match logged-in rows
+                            $row['id_kniha'] = $row['id'];
+                            $items[] = $row;
+                        }
+                    }
+                }
+            }
         }
 
         return $this->html(['items' => $items]);
@@ -68,11 +104,6 @@ class CartController extends BaseController
     {
         $auth = $this->app->getAuth();
         $user = $auth?->getUser();
-
-        if (!$user || $user->getId() === null) {
-            // Not logged in: send to login modal via home with openLogin flag
-            return $this->redirect($this->url('home.index', ['openLogin' => 1]));
-        }
 
         $bookId = (int)($request->value('id') ?? 0);
         $qty = (int)($request->value('qty') ?? 1);
@@ -94,6 +125,69 @@ class CartController extends BaseController
 
         $conn = Connection::getInstance();
 
+        // If user not logged in => store in session cart (guest flow)
+        if (!$user || $user->getId() === null) {
+            // If duplicate, skip mutation but compute cart total for response
+            if ($isDuplicate) {
+                // compute current cart total from session + DB prices
+                $cart = $session->get('cart', []);
+                $cartTotal = 0.0;
+                if (!empty($cart)) {
+                    $ids = array_keys($cart);
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $stmt = $conn->prepare("SELECT id_kniha, cena FROM kniha WHERE id_kniha IN ($placeholders)");
+                    $stmt->execute($ids);
+                    $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+                    $priceMap = [];
+                    foreach ($rows as $r) { $priceMap[(string)$r['id_kniha']] = (float)$r['cena']; }
+                    foreach ($cart as $k => $q) {
+                        $cartTotal += ($priceMap[(string)$k] ?? 0.0) * (int)$q;
+                    }
+                }
+
+                if ($request->isAjax()) {
+                    return $this->json(['success' => true, 'cartTotal' => $cartTotal, 'note' => 'duplicate_skipped']);
+                }
+                return $this->redirect($this->url('Cart.index'));
+            }
+
+            // Not duplicate: update session cart
+            $cart = $session->get('cart', []);
+            $key = (string)$bookId;
+            if (isset($cart[$key])) {
+                $cart[$key] = (int)$cart[$key] + $qty;
+            } else {
+                $cart[$key] = $qty;
+            }
+            $session->set('cart', $cart);
+
+            // compute cart total to return
+            $cartTotal = 0.0;
+            if (!empty($cart)) {
+                $ids = array_keys($cart);
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $stmt = $conn->prepare("SELECT id_kniha, cena FROM kniha WHERE id_kniha IN ($placeholders)");
+                $stmt->execute($ids);
+                $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+                $priceMap = [];
+                foreach ($rows as $r) { $priceMap[(string)$r['id_kniha']] = (float)$r['cena']; }
+                foreach ($cart as $k => $q) {
+                    $cartTotal += ($priceMap[(string)$k] ?? 0.0) * (int)$q;
+                }
+            }
+
+            // record last_add
+            $session->set('last_add', ['id' => $bookId, 'ts' => $now]);
+
+            if ($request->isAjax()) {
+                return $this->json(['success' => true, 'cartTotal' => $cartTotal]);
+            }
+
+            $referer = $request->server('HTTP_REFERER') ?? $this->url('Cart.index');
+            return $this->redirect($referer);
+        }
+
+        // --- existing logged-in behavior follows ---
         // If duplicate, skip DB mutation but still compute cart total to return consistent response
         if ($isDuplicate) {
             // compute current cart total

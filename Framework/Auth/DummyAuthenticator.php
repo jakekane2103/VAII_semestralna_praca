@@ -115,11 +115,55 @@ class DummyAuthenticator implements IAuthenticator
                                     }
                                 }
                             }
+
+                            // --- Merge session cart into DB cart (new) ---
+                            try {
+                                $sessCart = $this->session->get('cart', []);
+                                if (!empty($sessCart) && is_array($sessCart)) {
+                                    // Ensure the user has a kosik
+                                    $stmtK = $conn->prepare('SELECT id_kosik FROM kosik WHERE id_zakaznik = :uid LIMIT 1');
+                                    $stmtK->execute([':uid' => $uid]);
+                                    $krow = $stmtK->fetch(\PDO::FETCH_ASSOC);
+                                    if ($krow && isset($krow['id_kosik'])) {
+                                        $kid = (int)$krow['id_kosik'];
+                                    } else {
+                                        $insK = $conn->prepare('INSERT INTO kosik (id_zakaznik) VALUES (:uid)');
+                                        $insK->execute([':uid' => $uid]);
+                                        $kid = (int)$conn->lastInsertId();
+                                    }
+
+                                    // For each session cart item, add/increment in DB
+                                    foreach ($sessCart as $bookId => $quantity) {
+                                        $bookId = (int)$bookId;
+                                        $quantity = (int)$quantity;
+                                        if ($bookId <= 0 || $quantity <= 0) continue;
+
+                                        $line = $conn->prepare('SELECT mnozstvo FROM kosikKniha WHERE id_kosik = :cid AND id_kniha = :bid');
+                                        $line->execute([':cid' => $kid, ':bid' => $bookId]);
+                                        $existing = $line->fetch(\PDO::FETCH_ASSOC);
+
+                                        if ($existing) {
+                                            $newQty = (int)$existing['mnozstvo'] + $quantity;
+                                            $upd = $conn->prepare('UPDATE kosikKniha SET mnozstvo = :q WHERE id_kosik = :cid AND id_kniha = :bid');
+                                            $upd->execute([':q' => $newQty, ':cid' => $kid, ':bid' => $bookId]);
+                                        } else {
+                                            $insLine = $conn->prepare('INSERT INTO kosikKniha (id_kosik, id_kniha, mnozstvo) VALUES (:cid, :bid, :q)');
+                                            $insLine->execute([':cid' => $kid, ':bid' => $bookId, ':q' => $quantity]);
+                                        }
+                                    }
+
+                                    // Clear session cart after merging to avoid duplicate merges
+                                    $this->session->set('cart', []);
+                                }
+                            } catch (\Throwable $e) {
+                                // ignore cart merge errors to avoid breaking login
+                            }
+
                         }
                     } catch (\Throwable $e) {
                         // ignore sync errors to avoid breaking login
                     }
-                    // --- end wishlist sync ---
+                    // --- end wishlist and cart sync ---
 
                     return true;
                 }

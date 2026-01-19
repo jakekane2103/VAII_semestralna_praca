@@ -52,7 +52,7 @@
                         <div class="d-flex gap-1">
                             <form method="post" action="<?= $link->url('Wishlist.moveToCart') ?>" class="m-0">
                                 <input type="hidden" name="id" value="<?= $id ?>">
-                                <button type="submit" class="btn-wishlist-move btn btn-sm" aria-label="Move <?= $title ?> to cart">Presunúť do košíka</button>
+                                <button type="submit" class="btn-wishlist-move btn btn-sm" aria-label="Move <?= $title ?> to cart">Do košíka</button>
                             </form>
 
                             <form method="post" action="<?= $link->url('Wishlist.remove') ?>" class="m-0">
