@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <!-- Series overview table (hidden by default) -->
+    <!-- Series overview table -->
     <div class="row mb-4 admin-overview admin-overview-series d-none">
         <div class="col">
             <div class="card shadow-sm">
@@ -147,14 +147,6 @@
              </div>
          </div>
      </div>
-
-    <!-- Previously the Add book card lived here; replaced by modal triggered from header button -->
-    <div class="row g-4">
-        <!-- Placeholder column to keep spacing if needed (can be removed) -->
-        <div class="col-12">
-            <!-- Content continues: book list below -->
-        </div>
-    </div>
 
     <!-- Add book modal -->
     <div class="modal fade" id="adminAddModal" tabindex="-1" aria-labelledby="adminAddModalLabel" aria-hidden="true">
@@ -366,5 +358,5 @@
      data-delete-book-url="<?= htmlspecialchars($link->url('Admin.adminDelete'), ENT_QUOTES, 'UTF-8') ?>"
      data-delete-series-url="<?= htmlspecialchars($link->url('Admin.seriesDelete'), ENT_QUOTES, 'UTF-8') ?>">
 </div>
-
+x
 <!-- admin.js is included globally in the layout; do not include it here to avoid duplicate execution -->

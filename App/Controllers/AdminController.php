@@ -288,24 +288,107 @@ class AdminController extends BaseController
             return $this->redirect($this->url('Admin.index'));
         }
 
+        // Accept both id_kniha (default) and id (used when deleting a series or if JS switched names)
         $id = $request->value('id_kniha');
+        if ($id === null) {
+            $id = $request->value('id');
+        }
+
         if ($id === null || !ctype_digit((string)$id)) {
+            $this->app->getSession()->set('admin_flash', 'Neplatné ID knihy.');
             return $this->redirect($this->url('Admin.index'));
         }
         $id = (int)$id;
 
+        // New logic: prevent deletion if book is present in finalized orders; otherwise remove cart/wishlist references first
         try {
             $conn = Connection::getInstance();
-            $stmt = $conn->prepare('DELETE FROM kniha WHERE id_kniha = :id');
-            $stmt->execute([':id' => $id]);
-            $affected = $stmt->rowCount();
-            if ($affected > 0) {
-                $this->app->getSession()->set('admin_flash', 'Kniha bola odstránená.');
+
+            // If book exists in order items, don't allow deletion
+            try {
+                $ostmt = $conn->prepare('SELECT COUNT(*) AS cnt FROM polozkaObjednavky WHERE id_kniha = :id');
+                $ostmt->execute([':id' => $id]);
+                $orow = $ostmt->fetch(\PDO::FETCH_ASSOC);
+                $orderCount = isset($orow['cnt']) ? (int)$orow['cnt'] : 0;
+            } catch (\Exception $e) {
+                $orderCount = 0; // On error, be conservative and allow further checks to proceed to catch DB errors later
+            }
+
+            if ($orderCount > 0) {
+                $this->app->getSession()->set('admin_flash', 'Knihu nie je možné odstrániť — je použitá v existujúcich objednávkach.');
+                return $this->redirect($this->url('Admin.index'));
+            }
+
+            // Proceed: remove references from cart and wishlist, then delete the book, all in a transaction
+            $conn->beginTransaction();
+            try {
+                // Remove from carts
+                $d1 = $conn->prepare('DELETE FROM kosikKniha WHERE id_kniha = :id');
+                $d1->execute([':id' => $id]);
+
+                // Remove from wishlists
+                $d2 = $conn->prepare('DELETE FROM wishlistKniha WHERE id_kniha = :id');
+                $d2->execute([':id' => $id]);
+
+                // Finally delete the book
+                $d3 = $conn->prepare('DELETE FROM kniha WHERE id_kniha = :id');
+                $d3->execute([':id' => $id]);
+                $affected = $d3->rowCount();
+
+                $conn->commit();
+
+                if ($affected > 0) {
+                    $this->app->getSession()->set('admin_flash', 'Kniha bola odstránená (s vyčistenými košíkmi a wishlistami).');
+                } else {
+                    $this->app->getSession()->set('admin_flash', 'Kniha neexistovala.');
+                }
+            } catch (\Exception $inner) {
+                try { $conn->rollBack(); } catch (\Exception $rb) { /* ignore */ }
+                throw $inner;
+            }
+
+        } catch (\PDOException $e) {
+            // Detect foreign key constraint (MySQL error 1451 / SQLSTATE 23000) and show a helpful message
+            $sqlState = $e->getCode();
+            $mysqlErrNo = null;
+            try {
+                $info = $e->errorInfo ?? null;
+                if (is_array($info) && isset($info[1])) $mysqlErrNo = (int)$info[1];
+            } catch (\Throwable $t) { /* ignore */ }
+
+            // Log detailed exception for debugging
+            try {
+                $logDir = __DIR__ . '/../../logs';
+                if (!is_dir($logDir)) {
+                    @mkdir($logDir, 0755, true);
+                }
+                $logFile = $logDir . '/admin_delete.log';
+                $msg = sprintf("[%s] PDOException deleting book id=%s: SQLSTATE=%s, MySQLErr=%s, message=%s in %s:%s\n",
+                    date('c'), var_export($id, true), var_export($sqlState, true), var_export($mysqlErrNo, true), $e->getMessage(), $e->getFile(), $e->getLine());
+                @file_put_contents($logFile, $msg, FILE_APPEND | LOCK_EX);
+            } catch (\Exception $inner) {
+                error_log('AdminController::adminDelete logging failed: ' . $inner->getMessage());
+            }
+
+            if ($sqlState === '23000' || $mysqlErrNo === 1451) {
+                // FK constraint prevents deletion
+                $this->app->getSession()->set('admin_flash', 'Knihu nie je možné odstrániť — je použitá v objednávkach/košíku alebo v wishliste. Odstráňte najprv súvisiace položky.');
             } else {
-                $this->app->getSession()->set('admin_flash', 'Kniha neexistovala.');
+                $this->app->getSession()->set('admin_flash', 'Chyba databázy pri odstraňovaní knihy. (podrobnosti v logs/admin_delete.log)');
             }
         } catch (\Exception $e) {
-            $this->app->getSession()->set('admin_flash', 'Chyba databázy pri odstraňovaní knihy.');
+            // Generic exception logging
+            try {
+                $logDir = __DIR__ . '/../../logs';
+                if (!is_dir($logDir)) {
+                    @mkdir($logDir, 0755, true);
+                }
+                $logFile = $logDir . '/admin_delete.log';
+                $msg = sprintf("[%s] Exception deleting book id=%s: %s in %s:%s\n", date('c'), var_export($id, true), $e->getMessage(), $e->getFile(), $e->getLine());
+                @file_put_contents($logFile, $msg, FILE_APPEND | LOCK_EX);
+            } catch (\Exception $inner) { error_log('AdminController::adminDelete logging failed: ' . $inner->getMessage()); }
+
+            $this->app->getSession()->set('admin_flash', 'Chyba databázy pri odstraňovaní knihy. (podrobnosti v logs/admin_delete.log)');
         }
 
         return $this->redirect($this->url('Admin.index'));
