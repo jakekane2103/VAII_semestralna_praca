@@ -7,14 +7,24 @@
 /** @var string|null $flash */
 ?>
 
+<!-- Include consolidated admin stylesheet -->
+<link rel="stylesheet" href="<?= $link->asset('css/admin.css') ?>">
+
 <div class="container my-4">
     <div class="row mb-4 align-items-center">
         <div class="col">
             <h2>Admin panel</h2>
             <p class="text-muted"><?= htmlspecialchars($welcome ?? 'Správa kníh: pridávajte nové tituly, aktualizujte existujúce alebo ich odstraňujte.', ENT_QUOTES, 'UTF-8') ?></p>
         </div>
-        <div class="col-auto">
-            <button type="button" class="btn btn-success" id="admin-open-add">Pridať knihu</button>
+        <div class="col-auto d-flex align-items-center">
+            <!-- View toggle: Books / Series -->
+            <div class="btn-group me-3" role="group" aria-label="Prehľad toggle" id="admin-overview-toggle">
+                <input type="radio" class="btn-check" name="overview" id="overview-books" autocomplete="off" checked>
+                <label class="btn btn-outline-primary btn-sm" for="overview-books">Prehľad kníh</label>
+
+                <input type="radio" class="btn-check" name="overview" id="overview-series" autocomplete="off">
+                <label class="btn btn-outline-primary btn-sm" for="overview-series">Prehľad sérií</label>
+            </div>
         </div>
     </div>
 
@@ -31,11 +41,14 @@
     <?php endif; ?>
 
     <!-- Books overview table -->
-    <div class="row mb-4">
+    <div class="row mb-4 admin-overview admin-overview-books">
         <div class="col">
             <div class="card shadow-sm">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Prehľad kníh</strong>
+                    <div>
+                        <button type="button" class="admin-action-btn active " id="admin-open-add-book">Pridať knihu</button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <?php if (!empty($books)): ?>
@@ -49,7 +62,7 @@
                                     <th scope="col">Názov</th>
                                     <th scope="col">Autor</th>
                                     <th scope="col">Cena</th>
-                                    <th scope="col" style="width:48px;">&nbsp;</th>
+                                    <th scope="col" class="admin-col-small">&nbsp;</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -67,12 +80,12 @@
                                     ?>
                                     <tr class="admin-book-row" data-id="<?= (int)$b['id'] ?>" data-nazov="<?= htmlspecialchars($b['nazov'], ENT_QUOTES, 'UTF-8') ?>" data-autor="<?= htmlspecialchars($b['autor'], ENT_QUOTES, 'UTF-8') ?>" data-cena="<?= htmlspecialchars($b['cena'], ENT_QUOTES, 'UTF-8') ?>" data-obrazok="<?= htmlspecialchars($b['obrazok'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-series-id="<?= htmlspecialchars($b['series_id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-series-name="<?= htmlspecialchars($b['series_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-popis="<?= htmlspecialchars($b['popis'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                         <td><?= (int)$b['id'] ?></td>
-                                        <td style="width:72px;"><img src="<?= $link->asset($imgPath) ?>" alt="" style="height:48px;object-fit:cover;border-radius:.25rem;"></td>
+                                        <td class="admin-thumb-cell"><img src="<?= $link->asset($imgPath) ?>" alt="" class="admin-thumbnail"></td>
                                         <td><?= htmlspecialchars($b['nazov'], ENT_QUOTES, 'UTF-8') ?></td>
                                         <td class="text-muted"><?= htmlspecialchars($b['autor'], ENT_QUOTES, 'UTF-8') ?></td>
                                         <td class="fw-bold"><?= htmlspecialchars($b['cena'], ENT_QUOTES, 'UTF-8') ?> €</td>
                                         <td class="text-end">
-                                            <button type="button" class="btn btn-sm btn-outline-danger admin-delete-button" data-id="<?= (int)$b['id'] ?>" data-nazov="<?= htmlspecialchars($b['nazov'], ENT_QUOTES, 'UTF-8') ?>" aria-label="Odstrániť knihu">&times;</button>
+                                            <button type="button" class="btn btn-sm admin-delete-button" data-id="<?= (int)$b['id'] ?>" data-nazov="<?= htmlspecialchars($b['nazov'], ENT_QUOTES, 'UTF-8') ?>" aria-label="Odstrániť knihu">&times;</button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -86,6 +99,54 @@
             </div>
         </div>
     </div>
+
+    <!-- Series overview table (hidden by default) -->
+    <div class="row mb-4 admin-overview admin-overview-series d-none">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Prehľad sérií</strong>
+                    <div>
+                        <button type="button" class="admin-action-btn" id="admin-open-add-series">Pridať sériu</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <?php if (!empty($series)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0" aria-label="Prehľad sérií" role="table">
+                                <caption class="visually-hidden">Prehľad sérií</caption>
+                                <thead class="table-light">
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Názov</th>
+                                    <th scope="col">Počet kníh</th>
+                                    <th scope="col" class="admin-col-actions">Akcie</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($series as $s): ?>
+                                    <tr class="admin-series-row" tabindex="0" role="button" data-id="<?= (int)$s['id'] ?>" data-name="<?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>" data-count="<?= (int)($s['count'] ?? 0) ?>">
+                                        <td><?= (int)$s['id'] ?></td>
+                                        <td><?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                                        <td class="text-muted"><?= (int)($s['count'] ?? 0) ?></td>
+                                        <td class="text-end">
+                                            <div class="btn-group" role="group">
+                                                <!-- Row click opens edit modal; keep only delete button here -->
+                                                <button type="button" class="btn btn-sm admin-delete-series" data-id="<?= (int)$s['id'] ?>" data-name="<?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>" aria-label="Odstrániť sériu">&times;</button>
+                                             </div>
+                                         </td>
+                                     </tr>
+                                 <?php endforeach; ?>
+                                 </tbody>
+                             </table>
+                         </div>
+                     <?php else: ?>
+                         <div class="p-3 small text-muted">Žiadne série v databáze.</div>
+                     <?php endif; ?>
+                 </div>
+             </div>
+         </div>
+     </div>
 
     <!-- Previously the Add book card lived here; replaced by modal triggered from header button -->
     <div class="row g-4">
@@ -122,6 +183,7 @@
                                 <?php endforeach; ?>
                                 <option value="new">-- Pridať novú sériu --</option>
                             </select>
+                            <label for="add-series-new" class="visually-hidden">Názov novej série</label>
                             <input id="add-series-new" name="series_name_new" type="text" class="form-control mt-2 d-none" placeholder="Názov novej série">
                         </div>
                         <div class="mb-2">
@@ -157,7 +219,7 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="id_kniha" id="modal-delete-id" value="">
-                        <p>Chcete odstrániť knihu <strong id="modal-delete-nazov"></strong>?</p>
+                        <p>Chcete odstrániť <span id="modal-delete-type">knihu</span> <strong id="modal-delete-nazov"></strong>?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
@@ -199,6 +261,7 @@
                                 <?php endforeach; ?>
                                 <option value="new">-- Pridať novú sériu --</option>
                             </select>
+                            <label for="edit-series-new" class="visually-hidden">Názov novej série</label>
                             <input id="edit-series-new" name="series_name_new" type="text" class="form-control mt-2 d-none" placeholder="Názov novej série">
                         </div>
 
@@ -226,4 +289,82 @@
         </div>
     </div>
 
+    <!-- Series add/edit/delete modals -->
+    <div class="modal fade" id="adminAddSeriesModal" tabindex="-1" aria-labelledby="adminAddSeriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="<?= $link->url('Admin.seriesAdd') ?>" method="post" id="admin-add-series-form">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="adminAddSeriesModalLabel">Pridať sériu</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-2">
+                            <label for="add-series-name" class="form-label">Názov série</label>
+                            <input id="add-series-name" name="name" type="text" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
+                        <button type="submit" class="btn btn-success">Pridať sériu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="adminEditSeriesModal" tabindex="-1" aria-labelledby="adminEditSeriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="<?= $link->url('Admin.seriesEdit') ?>" method="post" id="admin-edit-series-form">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="adminEditSeriesModalLabel">Upraviť sériu</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="edit-series-id" value="">
+                        <div class="mb-2">
+                            <label for="edit-series-name" class="form-label">Názov série</label>
+                            <input id="edit-series-name" name="name" type="text" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
+                        <button type="submit" class="btn btn-primary">Uložiť zmeny</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="adminDeleteSeriesModal" tabindex="-1" aria-labelledby="adminDeleteSeriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="<?= $link->url('Admin.seriesDelete') ?>" method="post" id="admin-delete-series-form">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="adminDeleteSeriesModalLabel">Potvrdiť odstránenie série</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="modal-delete-series-id" value="">
+                        <p>Chcete odstrániť sériu <strong id="modal-delete-series-name"></strong>?<br>
+                            (Poznámka: knihy v tejto sérii nebudú odstránené automaticky.)</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
+                        <button type="submit" class="btn btn-danger">Odstrániť sériu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<?php /* expose delete URLs via data-attributes on a hidden element so the external admin.js can read them */ ?>
+<div id="admin-root" style="display:none"
+     data-delete-book-url="<?= htmlspecialchars($link->url('Admin.adminDelete'), ENT_QUOTES, 'UTF-8') ?>"
+     data-delete-series-url="<?= htmlspecialchars($link->url('Admin.seriesDelete'), ENT_QUOTES, 'UTF-8') ?>">
+</div>
+
+<!-- admin.js is included globally in the layout; do not include it here to avoid duplicate execution -->

@@ -388,8 +388,6 @@
                 handleHeartClick(e);
             } catch (ex) { console.error(ex); }
         }, true);
-
-        // NOTE: pointerdown listener removed to avoid duplicate handling on some devices/browsers
     }
 
     // DOMContentLoaded: wire up drag & drop

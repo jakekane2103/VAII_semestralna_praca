@@ -48,8 +48,8 @@ class AdminController extends BaseController
             $stmt->execute();
             $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Fetch all series for dropdowns
-            $sstmt = $conn->prepare('SELECT id, name FROM serie ORDER BY name');
+            // Fetch all series for dropdowns and overview including count of books
+            $sstmt = $conn->prepare('SELECT s.id, s.name, COUNT(k.id_kniha) AS count FROM serie s LEFT JOIN kniha k ON k.series_id = s.id GROUP BY s.id, s.name ORDER BY s.name');
             $sstmt->execute();
             $series = $sstmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
@@ -306,6 +306,118 @@ class AdminController extends BaseController
             }
         } catch (\Exception $e) {
             $this->app->getSession()->set('admin_flash', 'Chyba databázy pri odstraňovaní knihy.');
+        }
+
+        return $this->redirect($this->url('Admin.index'));
+    }
+
+    /**
+     * Handle adding a new series (POST).
+     */
+    public function seriesAdd(Request $request): Response
+    {
+        if (!$request->isPost()) {
+            return $this->redirect($this->url('Admin.index'));
+        }
+
+        $name = trim((string)$request->value('name'));
+        if ($name === '') {
+            $this->app->getSession()->set('admin_flash', 'Názov série nemožno nechať prázdny.');
+            return $this->redirect($this->url('Admin.index'));
+        }
+
+        try {
+            $conn = Connection::getInstance();
+            $stmt = $conn->prepare('INSERT INTO serie (name) VALUES (:name)');
+            $ok = $stmt->execute([':name' => $name]);
+            if ($ok) {
+                $this->app->getSession()->set('admin_flash', 'Séria bola pridaná.');
+            } else {
+                $this->app->getSession()->set('admin_flash', 'Pridanie série zlyhalo.');
+            }
+        } catch (\Exception $e) {
+            $this->app->getSession()->set('admin_flash', 'Chyba databázy pri pridávaní série.');
+        }
+
+        return $this->redirect($this->url('Admin.index'));
+    }
+
+    /**
+     * Handle editing an existing series (POST).
+     */
+    public function seriesEdit(Request $request): Response
+    {
+        if (!$request->isPost()) {
+            return $this->redirect($this->url('Admin.index'));
+        }
+
+        $id = $request->value('id');
+        $name = trim((string)$request->value('name'));
+        if ($id === null || !ctype_digit((string)$id) || $name === '') {
+            $this->app->getSession()->set('admin_flash', 'Neplatné údaje pre úpravu série.');
+            return $this->redirect($this->url('Admin.index'));
+        }
+        $id = (int)$id;
+
+        try {
+            $conn = Connection::getInstance();
+            $stmt = $conn->prepare('UPDATE serie SET name = :name WHERE id = :id');
+            $stmt->execute([':name' => $name, ':id' => $id]);
+            if ($stmt->rowCount() > 0) {
+                $this->app->getSession()->set('admin_flash', 'Séria bola upravená.');
+            } else {
+                $this->app->getSession()->set('admin_flash', 'Séria nebola nájdená alebo žiadne zmeny.');
+            }
+        } catch (\Exception $e) {
+            $this->app->getSession()->set('admin_flash', 'Chyba databázy pri úprave série.');
+        }
+
+        return $this->redirect($this->url('Admin.index'));
+    }
+
+    /**
+     * Handle deletion of a series (POST).
+     * If deletion fails due to foreign key constraints, an informative message will be shown.
+     */
+    public function seriesDelete(Request $request): Response
+    {
+        if (!$request->isPost()) {
+            return $this->redirect($this->url('Admin.index'));
+        }
+
+        $id = $request->value('id');
+        if ($id === null || !ctype_digit((string)$id)) {
+            $this->app->getSession()->set('admin_flash', 'Neplatné ID série.');
+            return $this->redirect($this->url('Admin.index'));
+        }
+        $id = (int)$id;
+
+        try {
+            $conn = Connection::getInstance();
+
+            // Guard: don't allow deleting a series that still has books assigned
+            $cstmt = $conn->prepare('SELECT COUNT(*) AS cnt FROM kniha WHERE series_id = :id');
+            $cstmt->execute([':id' => $id]);
+            $crow = $cstmt->fetch(\PDO::FETCH_ASSOC);
+            $count = isset($crow['cnt']) ? (int)$crow['cnt'] : 0;
+            if ($count > 0) {
+                $this->app->getSession()->set('admin_flash', 'Sériu nie je možné odstrániť — existujú knihy priradené k tejto sérii. Najprv ich presuňte alebo odstráňte.');
+                return $this->redirect($this->url('Admin.index'));
+            }
+
+            // Safe to delete
+            $stmt = $conn->prepare('DELETE FROM serie WHERE id = :id');
+            $stmt->execute([':id' => $id]);
+            if ($stmt->rowCount() > 0) {
+                $this->app->getSession()->set('admin_flash', 'Séria bola odstránená.');
+            } else {
+                $this->app->getSession()->set('admin_flash', 'Séria neexistovala.');
+            }
+        } catch (\PDOException $e) {
+            // Likely foreign key constraint or DB error: inform the admin
+            $this->app->getSession()->set('admin_flash', 'Sériu nie je možné odstrániť — existujú knihy priradené k tejto sérii. Najprv ich presuňte alebo odstráňte.');
+        } catch (\Exception $e) {
+            $this->app->getSession()->set('admin_flash', 'Chyba databázy pri odstraňovaní série.');
         }
 
         return $this->redirect($this->url('Admin.index'));

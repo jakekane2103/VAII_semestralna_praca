@@ -1,0 +1,71 @@
+/* Styles extracted from App/Views/Admin/index.view.php
+   Keep order and comments to preserve visual parity with inline styles.
+*/
+
+/* Styles for admin action buttons: mimic pagination selected/unselected design */
+.admin-action-btn {
+    display: inline-block;
+    padding: .25rem .6rem;
+    font-size: .875rem;
+    line-height: 1;
+    border-radius: .25rem;
+    border: 2px solid #dc3545; /* red border when inactive */
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+}
+.admin-action-btn.active {
+    background: #dc3545; /* red */
+    color: #fff; /* white text */
+    border-color: #dc3545;
+}
+/* Keep small visual parity with other small buttons */
+.admin-action-btn:focus { outline: none; box-shadow: 0 0 0 .15rem rgba(220,53,69,.25); }
+
+/* Make series rows indicate they are interactive and visible focus target */
+tr.admin-series-row { cursor: pointer; }
+tr.admin-series-row:focus { outline: 3px solid rgba(220,53,69,.18); }
+
+/* Ensure the edit-book modal appears below the fixed/sticky header so the modal header isn't hidden */
+#adminEditModal.modal {
+    /* Bootstrap centers modals with align-items:center on .modal; override for this modal */
+    align-items: flex-start !important;
+    /* Add top padding equal to header height plus a small gap */
+    padding-top: calc(var(--header-height, 120px) + 1rem) !important;
+}
+
+/* Optional: ensure the dialog isn't pulled further up by margins */
+#adminEditModal .modal-dialog {
+    margin-top: 0 !important;
+}
+
+/* Ensure Add-book and Add-series modals appear below the fixed/sticky header as well */
+#adminAddModal.modal,
+#adminAddSeriesModal.modal {
+    align-items: flex-start !important;
+    padding-top: calc(var(--header-height, 120px) + 1rem) !important;
+}
+#adminAddModal .modal-dialog,
+#adminAddSeriesModal .modal-dialog {
+    margin-top: 0 !important;
+}
+
+/* Small utility to ensure delete-modal noun styling matches surrounding text */
+#modal-delete-type { font-weight: 400; }
+
+/* Small column used for book actions */
+.admin-col-small { width: 48px; }
+
+/* Wider column used for series actions */
+.admin-col-actions { width: 96px; }
+
+/* Thumbnail cell to keep consistent layout */
+.admin-thumb-cell { width: 72px; }
+
+/* Thumbnail image used for book rows */
+.admin-thumbnail {
+    height: 48px;
+    object-fit: cover;
+    border-radius: .25rem;
+    display: block;
+}
