@@ -17,7 +17,12 @@
     // Output: Promise resolving to JSON object or { success: true }
     // Used: by handleAction and handleHeartClick to perform form-like POSTs.
     function postForm(url, fd) {
-        return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+        return fetch(url, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(function (r) {
                 if (!r.ok) throw new Error('Network response was not ok');
                 return r.json().catch(function () { return { success: true }; });
@@ -162,10 +167,7 @@
             fd.append('id', bookId);
 
             // Optimistic UI: toggle visual state immediately
-            var wasPressed = (btn.getAttribute('aria-pressed') === 'true');
-            var newPressed = !wasPressed;
-
-            // Helper to apply visual state (keeps image swap by filename)
+            // (wasPressed/newPressed already computed above)
             function applyState(pressed) {
                 try {
                     // update classes

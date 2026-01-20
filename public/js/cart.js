@@ -289,7 +289,12 @@
     if (!window.fetch) return;
 
     function postForm(url, fd) {
-        return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+        return fetch(url, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(function (r) { if (!r.ok) throw new Error('Network response was not ok'); return r.json().catch(function () { return { success: true }; }); });
     }
 

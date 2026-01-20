@@ -13,12 +13,6 @@ include __DIR__ . '/../Auth/loginModal.php';
     <title><?= App\Configuration::APP_NAME ?></title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
-    <link rel="icon" type="image/png" sizes="32x32" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
-    <link rel="icon" type="image/png" sizes="16x16" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
-    <link rel="manifest" href="<?= $link->asset('favicons/site.webmanifest') ?>">
-    <link rel="shortcut icon" href="<?= $link->asset('favicons/kaneVeritasLogoSymbol_212x212.png') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
@@ -40,38 +34,6 @@ include __DIR__ . '/../Auth/loginModal.php';
     <script src="<?= $link->asset('js/script.js') ?>"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
-
-<?php
-// Build navbar user HTML once to avoid mixed PHP/HTML parsing issues in templates
-$userNavHtml = '';
-if ($auth?->isLogged()) {
-    $isAdmin = strtolower((string)($auth->user->name ?? '')) === 'admin';
-    if ($isAdmin) {
-        // For admin: do not show an account dropdown. Clicking the account will log out.
-        $userNavHtml .= '<li class="nav-item">';
-        $userNavHtml .= '<a class="nav-link d-flex align-items-center" href="' . $link->url('auth.logout') . '">';
-        $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="account" class="icon2 me-1 w-10"> ' . ($auth?->user?->name ?? '') . '</a>';
-        $userNavHtml .= '</li>';
-        $userNavHtml .= '<li class="nav-item"><a class="btn btn-outline-success" href="' . $link->url('admin.index') . '">ADMIN PANEL</a></li>';
-    } else {
-        $userNavHtml .= '<li class="nav-item dropdown">';
-        $userNavHtml .= '<a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">';
-        $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="account" class="icon2 me-1 w-10"> ' . ($auth?->user?->name ?? '') . '<' . '/a>';
-        $userNavHtml .= '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">';
-        $userNavHtml .= '<li><a class="dropdown-item" href="' . $link->url('Account.index') . '">Upraviť údaje</a></li>';
-        $userNavHtml .= '<li><hr class="dropdown-divider"></li>';
-        $userNavHtml .= '<li><a class="dropdown-item" href="' . $link->url('auth.logout') . '">Odhlásiť</a></li>';
-        $userNavHtml .= '<' . '/ul>' . '<' . '/li>';
-        $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" href="' . $link->url('wishlist.index') . '">';
-        $userNavHtml .= '<img src="' . $link->asset('images/wishlistIconRed.png') . '" alt="wish" class="icon2 me-1 w-10">' . '<' . '/a>' . '<' . '/li>';
-    }
-} else {
-    $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#loginModal" href="' . $link->url('auth.loginModal') . '">';
-    $userNavHtml .= '<img src="' . $link->asset('images/iconMan.png') . '" alt="login" class="icon2 me-1 w-10"> Prihlásiť' . '<' . '/a>' . '<' . '/li>';
-    $userNavHtml .= '<li class="nav-item"><a class="nav-link d-flex align-items-center" href="' . $link->url('wishlist.index') . '">';
-    $userNavHtml .= '<img src="' . $link->asset('images/wishlistIconRed.png') . '" alt="wish" class="icon2 me-1 w-10">' . '<' . '/a>' . '<' . '/li>';
-}
-?>
 
 <header class="sticky-header">
     <nav class="navbar navbar-expand-md">
@@ -172,7 +134,6 @@ if ($auth?->isLogged()) {
         </div>
     </nav>
 </header>
-
 
 <div class="container-fluid mt-3 flex-grow-1">
     <div class="web-content">

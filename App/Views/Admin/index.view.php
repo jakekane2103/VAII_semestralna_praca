@@ -1,7 +1,6 @@
 <?php
 
 /** @var \Framework\Support\LinkGenerator $link */
-/** @var \Framework\Core\IAuthenticator $auth */
 /** @var array $books */
 /** @var array $series */
 /** @var string|null $flash */
@@ -46,9 +45,7 @@
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Prehľad kníh</strong>
-                    <div>
-                        <button type="button" class="admin-action-btn active " id="admin-open-add-book">Pridať knihu</button>
-                    </div>
+                    <button type="button" class="admin-action-btn active" id="admin-open-add-book">Pridať knihu</button>
                 </div>
                 <div class="card-body p-0">
                     <?php if (!empty($books)): ?>
@@ -69,14 +66,10 @@
                                 <?php foreach ($books as $b): ?>
                                     <?php
                                         // Normalize thumbnail path for display (prefix bare filename with images/books/)
-                                        $rawImg = $b['obrazok'] ?? '';
-                                        if ($rawImg === null || $rawImg === '') {
-                                            $imgPath = 'images/Real_Estate_(101).jpg';
-                                        } elseif (strpos($rawImg, '/') === false) {
-                                            $imgPath = 'images/books/' . $rawImg;
-                                        } else {
-                                            $imgPath = $rawImg;
-                                        }
+                                        $rawImg = (string)($b['obrazok'] ?? '');
+                                        $imgPath = $rawImg === ''
+                                            ? 'images/Real_Estate_(101).jpg'
+                                            : (strpos($rawImg, '/') === false ? 'images/books/' . $rawImg : $rawImg);
                                     ?>
                                     <tr class="admin-book-row" data-id="<?= (int)$b['id'] ?>" data-nazov="<?= htmlspecialchars($b['nazov'], ENT_QUOTES, 'UTF-8') ?>" data-autor="<?= htmlspecialchars($b['autor'], ENT_QUOTES, 'UTF-8') ?>" data-cena="<?= htmlspecialchars($b['cena'], ENT_QUOTES, 'UTF-8') ?>" data-obrazok="<?= htmlspecialchars($b['obrazok'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-series-id="<?= htmlspecialchars($b['series_id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-series-name="<?= htmlspecialchars($b['series_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-popis="<?= htmlspecialchars($b['popis'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                         <td><?= (int)$b['id'] ?></td>
@@ -106,9 +99,7 @@
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Prehľad sérií</strong>
-                    <div>
-                        <button type="button" class="admin-action-btn" id="admin-open-add-series">Pridať sériu</button>
-                    </div>
+                    <button type="button" class="admin-action-btn" id="admin-open-add-series">Pridať sériu</button>
                 </div>
                 <div class="card-body p-0">
                     <?php if (!empty($series)): ?>
@@ -130,23 +121,21 @@
                                         <td><?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?></td>
                                         <td class="text-muted"><?= (int)($s['count'] ?? 0) ?></td>
                                         <td class="text-end">
-                                            <div class="btn-group" role="group">
-                                                <!-- Row click opens edit modal; keep only delete button here -->
-                                                <button type="button" class="btn btn-sm admin-delete-series" data-id="<?= (int)$s['id'] ?>" data-name="<?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>" aria-label="Odstrániť sériu">&times;</button>
-                                             </div>
-                                         </td>
-                                     </tr>
-                                 <?php endforeach; ?>
-                                 </tbody>
-                             </table>
-                         </div>
-                     <?php else: ?>
-                         <div class="p-3 small text-muted">Žiadne série v databáze.</div>
-                     <?php endif; ?>
-                 </div>
-             </div>
-         </div>
-     </div>
+                                            <!-- Row click opens edit modal; keep only delete button here -->
+                                            <button type="button" class="btn btn-sm admin-delete-series" data-id="<?= (int)$s['id'] ?>" data-name="<?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>" aria-label="Odstrániť sériu">&times;</button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="p-3 small text-muted">Žiadne série v databáze.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Add book modal -->
     <div class="modal fade" id="adminAddModal" tabindex="-1" aria-labelledby="adminAddModalLabel" aria-hidden="true">
@@ -356,7 +345,4 @@
 <?php /* expose delete URLs via data-attributes on a hidden element so the external admin.js can read them */ ?>
 <div id="admin-root" style="display:none"
      data-delete-book-url="<?= htmlspecialchars($link->url('Admin.adminDelete'), ENT_QUOTES, 'UTF-8') ?>"
-     data-delete-series-url="<?= htmlspecialchars($link->url('Admin.seriesDelete'), ENT_QUOTES, 'UTF-8') ?>">
-</div>
-x
-<!-- admin.js is included globally in the layout; do not include it here to avoid duplicate execution -->
+     data-delete-series-url="<?= htmlspecialchars($link->url('Admin.seriesDelete'), ENT_QUOTES, 'UTF-8') ?>"></div>

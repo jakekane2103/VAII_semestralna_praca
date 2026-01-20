@@ -5,8 +5,11 @@
 /** @var string|null $authorFilter */
 /** @var \Framework\Core\IAuthenticator $auth */
 
-// detect admin in the view (match project's simple username check)
 $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin';
+
+$wishIconOn = 'images/wishlistIconRed-outlineWhite.png';
+$wishIconOff = 'images/wishlistIconWhite.png';
+$cartIcon = 'images/cartIcon.png';
 ?>
 
 <div class="container-fluid books-index">
@@ -29,7 +32,7 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
             $detailUrl = $link->url('Books.detail', ['id' => $book['id']]);
             $author = $book['autor'] ?? '';
             $authorUrl = $author !== '' ? $link->url('Books.index', ['q' => $author, 'author' => 1]) : null;
-            // normalize obrazok for display: prefix with images/books/ when value is a bare filename
+
             $rawImg = $book['obrazok'] ?? '';
             if ($rawImg === null || $rawImg === '') {
                 $imgPath = 'images/placeholder-book.png';
@@ -38,6 +41,12 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
             } else {
                 $imgPath = $rawImg;
             }
+
+            $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'];
+            $bookId = htmlspecialchars((string)$bookIdRaw, ENT_QUOTES, 'UTF-8');
+            $inWishlist = isset($wishlistMap[(string)$bookIdRaw]);
+            $btnClass = $inWishlist ? 'btn btn-danger' : 'btn btn-outline-danger';
+            $ariaPressed = $inWishlist ? 'true' : 'false';
             ?>
             <div class="col-md-4 p-0">
                 <div class="card h-100 m-0 border-0 shadow-sm">
@@ -70,23 +79,14 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                                 <div class="book-footer mt-auto d-flex justify-content-between align-items-center">
                                     <div class="book-price fw-bold fs-5"><?= htmlspecialchars($book['cena'], ENT_QUOTES, 'UTF-8') ?> €</div>
                                     <div class="d-flex gap-2 align-items-center">
-                                        <?php
-                                        $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'];
-                                        $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
-                                        $inWishlist = isset($wishlistMap[(string)$bookIdRaw]);
-                                        $btnClass = $inWishlist ? 'btn btn-danger' : 'btn btn-outline-danger';
-                                        $ariaPressed = $inWishlist ? 'true' : 'false';
-                                        ?>
-
                                         <?php if (!($isAdmin ?? false)) { ?>
-                                            <!-- Wishlist + Cart controls (hidden for admin users) -->
                                             <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
                                                 <input type="hidden" name="id" value="<?= $bookId ?>">
                                                 <button type="submit" role="button" class="<?= $btnClass ?> btn-wishlist" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
                                                         data-book-id="<?= $bookId ?>" aria-pressed="<?= $ariaPressed ?>"
-                                                        data-icon-on="<?= $link->asset('images/wishlistIconRed-outlineWhite.png') ?>"
-                                                        data-icon-off="<?= $link->asset('images/wishlistIconWhite.png') ?>">
-                                                    <img src="<?= $link->asset($inWishlist ? 'images/wishlistIconRed-outlineWhite.png' : 'images/wishlistIconWhite.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
+                                                        data-icon-on="<?= $link->asset($wishIconOn) ?>"
+                                                        data-icon-off="<?= $link->asset($wishIconOff) ?>">
+                                                    <img src="<?= $link->asset($inWishlist ? $wishIconOn : $wishIconOff) ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
                                                     <span class="visually-hidden">Pridať do wishlistu</span>
                                                 </button>
                                             </form>
@@ -96,10 +96,10 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                                                   data-book-author="<?= htmlspecialchars($author, ENT_QUOTES, 'UTF-8') ?>"
                                                   data-book-image="<?= $link->asset($imgPath) ?>"
                                                   data-book-price="<?= htmlspecialchars($book['cena'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                                <input type="hidden" name="id" value="<?= htmlspecialchars($book['id'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="id" value="<?= htmlspecialchars((string)($book['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                                                 <input type="hidden" name="qty" value="1">
                                                 <button type="submit" class="btn btn-primary">
-                                                    <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                                    <img src="<?= $link->asset($cartIcon) ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
                                                     <span class="visually-hidden btn-label">Do košíka</span>
                                                 </button>
                                             </form>
@@ -247,7 +247,7 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
     </div>
 
     <script>
-        // Variables used by the global cart/wishlist JS (loaded from layout as cart.js)
+        // Used by public/js/(books.js|cart.js)
         window.BOOKS_CART_URL = <?= json_encode($link->url('Cart.index')) ?>;
         window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
         window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;

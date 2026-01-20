@@ -4,8 +4,21 @@
 /** @var bool|null $inWishlist */
 /** @var \Framework\Core\IAuthenticator $auth */
 
-// detect admin in the view (same simple username check used by other views)
 $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin';
+
+// Normalize image path once
+$rawImg = $book['obrazok'] ?? '';
+if ($rawImg === null || $rawImg === '') {
+    $imgPath = 'images/Real_Estate_(101).jpg';
+} elseif (strpos($rawImg, '/') === false) {
+    $imgPath = 'images/books/' . $rawImg;
+} else {
+    $imgPath = $rawImg;
+}
+
+$wishIconOn = 'images/wishlistIconRed-outlineWhite.png';
+$wishIconOff = 'images/wishlistIconWhite.png';
+$cartIcon = 'images/cartIcon.png';
 ?>
 
 <div class="page-book-detail bg-light min-vh-100">
@@ -19,16 +32,6 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
 
                 <!-- Book Cover -->
                 <div class="col-md-5 text-center">
-                    <?php
-                        $rawImg = $book['obrazok'] ?? '';
-                        if ($rawImg === null || $rawImg === '') {
-                            $imgPath = 'images/Real_Estate_(101).jpg';
-                        } elseif (strpos($rawImg, '/') === false) {
-                            $imgPath = 'images/books/' . $rawImg;
-                        } else {
-                            $imgPath = $rawImg;
-                        }
-                    ?>
                     <img src="<?= $link->asset($imgPath) ?>"
                          alt="<?= htmlspecialchars($book['nazov'] ?? 'Bez názvu', ENT_QUOTES, 'UTF-8') ?>"
                          class="img-fluid rounded book-detail-cover">
@@ -56,10 +59,10 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                     <!-- Book metadata -->
                     <?php
                     $stats = [
-                            'Počet strán'    => $book['pocet_stran']    ?? '352',
-                            'Vydavateľstvo'  => $book['vydavatelstvo'] ?? 'Orbit Books',
-                            'Jazyk'          => $book['jazyk']         ?? 'anglický',
-                            'Rok vydania'    => $book['rok_vydania']   ?? '2004',
+                        'Počet strán' => $book['pocet_stran'] ?? '352',
+                        'Vydavateľstvo' => $book['vydavatelstvo'] ?? 'Orbit Books',
+                        'Jazyk' => $book['jazyk'] ?? 'anglický',
+                        'Rok vydania' => $book['rok_vydania'] ?? '2004',
                     ];
                     ?>
 
@@ -68,7 +71,7 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                         <dl class="row mb-0 book-detail-meta small">
                             <?php foreach ($stats as $label => $value): ?>
                                 <dt class="col-5 col-sm-4 text-muted"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></dt>
-                                <dd class="col-7 col-sm-8"><?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?></dd>
+                                <dd class="col-7 col-sm-8"><?= htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') ?></dd>
                             <?php endforeach; ?>
                         </dl>
                     </section>
@@ -96,32 +99,29 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
                             <?php
                             $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '';
                             $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
-                            // Normalize wishlist flag to a proper boolean (handles '0', 'false', etc.)
                             $isIn = filter_var($inWishlist ?? false, FILTER_VALIDATE_BOOLEAN);
                             $btnClass = $isIn ? 'btn btn-danger px-4 btn-wishlist' : 'btn btn-outline-danger px-4 btn-wishlist';
-                            $iconOn = $link->asset('images/wishlistIconRed-outlineWhite.png');
-                            $iconOff = $link->asset('images/wishlistIconWhite.png');
                             ?>
-                            <?php if (!($isAdmin ?? false)) { ?>
-                            <!-- Wishlist button, same CSS as cart and to its left (hidden for admin) -->
-                            <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
-                                <input type="hidden" name="id" value="<?= $bookId ?>">
-                                <button type="submit" role="button" class="<?= $btnClass ?>" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
-                                        data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>"
-                                        data-icon-on="<?= $iconOn ?>" data-icon-off="<?= $iconOff ?>">
-                                    <img src="<?= $link->asset($isIn ? 'images/wishlistIconRed-outlineWhite.png' : 'images/wishlistIconWhite.png') ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
-                                    <span class="visually-hidden">Pridať do wishlistu</span>
-                                </button>
-                            </form>
 
-                            <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0">
-                                <input type="hidden" name="id" value="<?= $bookId ?>">
-                                <input type="hidden" name="qty" value="1">
-                                <button type="submit" class="btn btn-primary px-4">
-                                    <img src="<?= $link->asset('images/cartIcon.png') ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
-                                    <span class="visually-hidden btn-label">Do košíka</span>
-                                </button>
-                            </form>
+                            <?php if (!($isAdmin ?? false)) { ?>
+                                <form action="<?= $link->url('Wishlist.add') ?>" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="<?= $bookId ?>">
+                                    <button type="submit" role="button" class="<?= $btnClass ?>" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
+                                            data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>"
+                                            data-icon-on="<?= $link->asset($wishIconOn) ?>" data-icon-off="<?= $link->asset($wishIconOff) ?>">
+                                        <img src="<?= $link->asset($isIn ? $wishIconOn : $wishIconOff) ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
+                                        <span class="visually-hidden">Pridať do wishlistu</span>
+                                    </button>
+                                </form>
+
+                                <form action="<?= $link->url('Cart.add') ?>" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="<?= $bookId ?>">
+                                    <input type="hidden" name="qty" value="1">
+                                    <button type="submit" class="btn btn-primary px-4">
+                                        <img src="<?= $link->asset($cartIcon) ?>" alt="" class="icon2 w-16 btn-cart-icon" aria-hidden="true">
+                                        <span class="visually-hidden btn-label">Do košíka</span>
+                                    </button>
+                                </form>
                             <?php } ?>
                         </div>
                     </div>
@@ -132,6 +132,7 @@ $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) =
 </div>
 
 <script>
-  window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
-  window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;
+    // Used by public/js/wishlist.js
+    window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
+    window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;
 </script>
