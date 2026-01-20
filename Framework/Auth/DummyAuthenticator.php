@@ -2,6 +2,8 @@
 
 namespace Framework\Auth;
 
+use App\Models\Cart;
+use App\Models\Wishlist;
 use Exception;
 use Framework\Core\App;
 use Framework\Core\IAuthenticator;
@@ -70,86 +72,54 @@ class DummyAuthenticator implements IAuthenticator
                     $this->user = $user;
                     $this->session->set('user', $this->user);
 
-                    // --- Sync wishlist from DB and merge with any existing session wishlist ---
+                    // --- Sync wishlist and cart from session into DB (delegate to models) ---
                     try {
-                        // Only sync for real DB-backed users (id present)
                         if ($user->getId() !== null) {
                             $uid = (int)$user->getId();
-                            $conn = Connection::getInstance();
 
-                            // Ensure wishlist row exists for this user
-                            $stmtW = $conn->prepare('SELECT id_wishlist FROM wishlist WHERE id_zakaznik = :uid LIMIT 1');
-                            $stmtW->execute([':uid' => $uid]);
-                            $wrow = $stmtW->fetch(\PDO::FETCH_ASSOC);
-                            if ($wrow && isset($wrow['id_wishlist'])) {
-                                $wid = (int)$wrow['id_wishlist'];
-                            } else {
-                                $insW = $conn->prepare('INSERT INTO wishlist (id_zakaznik, title, datum_pridania) VALUES (:uid, :title, NOW())');
-                                $insW->execute([':uid' => $uid, ':title' => 'Moje wishlist']);
-                                $wid = (int)$conn->lastInsertId();
-                            }
+                            // 1) Wishlist: merge session wishlist into DB wishlist (keep session order first)
+                            $wishlistModel = new Wishlist();
+                            $wid = $wishlistModel->getOrCreateWishlistId($uid);
+                            if ($wid !== null) {
+                                // Load DB wishlist ids
+                                $stmtItems = $conn->prepare('SELECT id_kniha FROM wishlistKniha WHERE id_wishlist = :wid');
+                                $stmtItems->execute([':wid' => $wid]);
+                                $rowsItems = $stmtItems->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+                                $dbWishlist = [];
+                                foreach ($rowsItems as $r) {
+                                    if (isset($r['id_kniha'])) {
+                                        $dbWishlist[] = (string)$r['id_kniha'];
+                                    }
+                                }
 
-                            // Load items from DB wishlist
-                            $stmtItems = $conn->prepare('SELECT id_kniha FROM wishlistKniha WHERE id_wishlist = :wid');
-                            $stmtItems->execute([':wid' => $wid]);
-                            $rowsItems = $stmtItems->fetchAll(\PDO::FETCH_ASSOC);
-                            $dbWishlist = [];
-                            foreach ($rowsItems as $r) {
-                                $dbWishlist[] = (string)$r['id_kniha'];
-                            }
+                                $sessList = $this->session->get('wishlist', []);
+                                $sessList = array_values(array_unique(array_map('strval', $sessList)));
 
-                            // Merge with any session wishlist (preserve session order first)
-                            $sessList = $this->session->get('wishlist', []);
-                            $sessList = array_values(array_unique(array_map('strval', $sessList)));
-                            $merged = array_values(array_unique(array_merge($sessList, $dbWishlist)));
-                            $this->session->set('wishlist', $merged);
+                                // Merge (preserve session order first)
+                                $merged = array_values(array_unique(array_merge($sessList, $dbWishlist)));
+                                $this->session->set('wishlist', $merged);
 
-                            // Persist any session-only items into DB
-                            foreach ($sessList as $kid) {
-                                if (!in_array($kid, $dbWishlist, true)) {
-                                    try {
-                                        $insItem = $conn->prepare('INSERT INTO wishlistKniha (id_wishlist, id_kniha) VALUES (:wid, :kid)');
-                                        $insItem->execute([':wid' => $wid, ':kid' => $kid]);
-                                    } catch (\Throwable $e) {
-                                        // ignore duplicate or DB errors per existing behavior
+                                // Persist session-only items into DB
+                                foreach ($sessList as $kid) {
+                                    if (!in_array($kid, $dbWishlist, true) && ctype_digit((string)$kid)) {
+                                        $wishlistModel->addToDb($uid, (int)$kid);
                                     }
                                 }
                             }
 
-                            // --- Merge session cart into DB cart (new) ---
+                            // 2) Cart: merge session cart into DB cart and clear session cart
                             try {
+                                $cartModel = new Cart();
                                 $sessCart = $this->session->get('cart', []);
                                 if (!empty($sessCart) && is_array($sessCart)) {
-                                    // Ensure the user has a kosik
-                                    $stmtK = $conn->prepare('SELECT id_kosik FROM kosik WHERE id_zakaznik = :uid LIMIT 1');
-                                    $stmtK->execute([':uid' => $uid]);
-                                    $krow = $stmtK->fetch(\PDO::FETCH_ASSOC);
-                                    if ($krow && isset($krow['id_kosik'])) {
-                                        $kid = (int)$krow['id_kosik'];
-                                    } else {
-                                        $insK = $conn->prepare('INSERT INTO kosik (id_zakaznik) VALUES (:uid)');
-                                        $insK->execute([':uid' => $uid]);
-                                        $kid = (int)$conn->lastInsertId();
-                                    }
-
-                                    // For each session cart item, add/increment in DB
                                     foreach ($sessCart as $bookId => $quantity) {
                                         $bookId = (int)$bookId;
                                         $quantity = (int)$quantity;
-                                        if ($bookId <= 0 || $quantity <= 0) continue;
-
-                                        $line = $conn->prepare('SELECT mnozstvo FROM kosikKniha WHERE id_kosik = :cid AND id_kniha = :bid');
-                                        $line->execute([':cid' => $kid, ':bid' => $bookId]);
-                                        $existing = $line->fetch(\PDO::FETCH_ASSOC);
-
-                                        if ($existing) {
-                                            $newQty = (int)$existing['mnozstvo'] + $quantity;
-                                            $upd = $conn->prepare('UPDATE kosikKniha SET mnozstvo = :q WHERE id_kosik = :cid AND id_kniha = :bid');
-                                            $upd->execute([':q' => $newQty, ':cid' => $kid, ':bid' => $bookId]);
-                                        } else {
-                                            $insLine = $conn->prepare('INSERT INTO kosikKniha (id_kosik, id_kniha, mnozstvo) VALUES (:cid, :bid, :q)');
-                                            $insLine->execute([':cid' => $kid, ':bid' => $bookId, ':q' => $quantity]);
+                                        if ($bookId <= 0 || $quantity <= 0) {
+                                            continue;
                                         }
+
+                                        $cartModel->addToDbCart($uid, $bookId, $quantity);
                                     }
 
                                     // Clear session cart after merging to avoid duplicate merges
