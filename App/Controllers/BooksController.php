@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Models\Book;
 use Framework\Core\BaseController;
-use Framework\DB\Connection;
 use Framework\Http\Request;
 use Framework\Http\Responses\Response;
 
@@ -41,20 +41,13 @@ class BooksController extends BaseController
     public function index(Request $request): Response
     {
         // Read search query from GET (desktop and mobile forms submit here)
-        $q = '';
-        $raw = $request->get('q');
-        if ($raw !== null) {
-            $q = trim((string)$raw);
-        }
+        $q = trim((string)($request->get('q') ?? ''));
 
-        // Detect if this is an "author view" (clicked on author name)
-        $authorFilter = null;
+        // "author view" (clicked on author)
         $authorFlag = $request->get('author');
-        if ($authorFlag !== null && $q !== '') {
-            $authorFilter = $q; // we treat q as exact author name for header
-        }
+        $authorFilter = ($authorFlag !== null && $q !== '') ? $q : null;
 
-        // Pagination: page parameter 'p', default 1, 21 items per page
+        // Pagination: page parameter 'p', default 1
         $pageRaw = $request->get('p');
         $page = 1;
         if ($pageRaw !== null && ctype_digit((string)$pageRaw)) {
@@ -62,84 +55,33 @@ class BooksController extends BaseController
         }
         $perPage = 21;
 
-        $conn = Connection::getInstance();
-
-        // Use SQL COUNT and LIMIT/OFFSET to fetch only the requested page
-        if ($q === '') {
-            // No search term -> count all books
-            $countStmt = $conn->prepare('SELECT COUNT(*) FROM kniha');
-            $countStmt->execute();
-            $totalBooks = (int)$countStmt->fetchColumn();
-
-            $totalPages = (int)max(1, ceil($totalBooks / $perPage));
-            if ($page > $totalPages) $page = $totalPages;
-            $offset = ($page - 1) * $perPage;
-
-            $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
-                    FROM kniha b
-                    LEFT JOIN serie s ON b.series_id = s.id
-                    ORDER BY b.nazov
-                    LIMIT :limit OFFSET :offset";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            $stmt->execute();
-        } else {
-            // Search by nazov, autor or seria (case-insensitive by DB collation)
-            $countSql = "SELECT COUNT(*)
-                         FROM kniha b
-                         LEFT JOIN serie s ON b.series_id = s.id
-                         WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q";
-            $countStmt = $conn->prepare($countSql);
-            $like = '%' . $q . '%';
-            $countStmt->execute([':q' => $like]);
-            $totalBooks = (int)$countStmt->fetchColumn();
-
-            $totalPages = (int)max(1, ceil($totalBooks / $perPage));
-            if ($page > $totalPages) $page = $totalPages;
-            $offset = ($page - 1) * $perPage;
-
-            $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
-                    FROM kniha b
-                    LEFT JOIN serie s ON b.series_id = s.id
-                    WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q
-                    ORDER BY b.nazov
-                    LIMIT :limit OFFSET :offset";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':q', $like, \PDO::PARAM_STR);
-            $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            $stmt->execute();
-        }
-
-        $books = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $bookModel = new Book();
+        $result = $bookModel->getPaginatedList($q !== '' ? $q : null, $page, $perPage);
 
         // Get wishlist IDs from session so the view can mark hearts as filled
         $session = $this->app->getSession();
         $wishlist = $session->get('wishlist', []);
-        // normalize to string keys for quick lookup
         $wishlistMap = array_flip(array_map('strval', $wishlist));
 
-        // Fetch series list for admin edit/add forms (non-critical)
+        // Series list is used by some UI/admin widgets; keep it available
+        $series = [];
         try {
-            $sstmt = $conn->prepare('SELECT id, name FROM serie ORDER BY name');
-            $sstmt->execute();
-            $series = $sstmt->fetchAll(\PDO::FETCH_ASSOC);
-        } catch (\Exception $e) {
+            $series = $bookModel->getAllSeries();
+        } catch (\Throwable $e) {
             $series = [];
         }
 
         return $this->html([
-            'books'        => $books,
+            'books'        => $result['books'],
             'q'            => $q,
             'authorFilter' => $authorFilter,
             'authorFlag'   => $authorFlag,
             'wishlistMap'  => $wishlistMap,
             'series'       => $series,
-            'page'         => $page,
-            'totalPages'   => $totalPages,
-            'perPage'      => $perPage,
-            'totalBooks'   => $totalBooks,
+            'page'         => $result['page'],
+            'totalPages'   => $result['totalPages'],
+            'perPage'      => $result['perPage'],
+            'totalBooks'   => $result['totalBooks'],
         ]);
     }
 
@@ -150,17 +92,13 @@ class BooksController extends BaseController
     {
         $id = $request->get('id');
         if ($id === null || !ctype_digit((string)$id)) {
-            // fallback: redirect back to books list
             return $this->redirect($this->url('Books.index'));
         }
 
-        $conn = Connection::getInstance();
-        $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name, b.ISBN FROM kniha b LEFT JOIN serie s ON b.series_id = s.id WHERE b.id_kniha = :id");
-        $stmt->execute([':id' => $id]);
-        $book = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $bookModel = new Book();
+        $book = $bookModel->getDetailById((int)$id);
 
         if (!$book) {
-            // book not found, go back to list
             return $this->redirect($this->url('Books.index'));
         }
 
