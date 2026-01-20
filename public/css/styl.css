@@ -17,8 +17,15 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
+/*
+  Buttons
+  - Keep Bootstrap class names, but force a consistent red palette.
+  - Avoid repetition by grouping equivalent variants.
+*/
 :root {
     --header-height: 120px; /* was 0px, changed to avoid layout shift on initial render */
+    --brand-red: #ff1111;
+    --brand-red-hover: #ff4d4d;
 }
 
 /* Ensure anchors and in-page jumps don't get hidden under the fixed header */
@@ -86,26 +93,6 @@ html {
     max-height: 80px; /* sets a max height but allows smaller screens to scale it down */
 }
 
-/* Reduce header logo sizes on small screens to avoid layout zooming in device emulation */
-@media (max-width: 576px) {
-    .navbar-brand img.logo-symbol { max-height: 48px; }
-    .navbar-brand img.logo-name { max-height: 52px; }
-    /* Reduce nav item spacing to fit smaller widths */
-    .nav-item { margin-left: 0.5rem; }
-    .navbar-nav .nav-link { font-size: 100%; }
-    /* Shrink nav icons on small screens */
-    .nav-link .icon { width: 36px; height: 36px; }
-    .nav-link .icon2 { width: 24px; height: 24px; margin-left: 6px; }
-}
-
-/* Extra small devices: hide verbose logo text and tighten spacing */
-@media (max-width: 420px) {
-    .navbar-brand img.logo-name { display: none; }
-    .navbar-brand img.logo-symbol { max-height: 44px; }
-    .nav-item { margin-left: 0.25rem; }
-    .navbar-nav .nav-link { padding-top: 0.15rem; padding-bottom: 0.15rem; }
-}
-
 .nav-item {
     margin-left: 2rem; /* space between nav items */
 }
@@ -118,21 +105,21 @@ html {
     color: white;
     border: none;
     font-family: "Verdana", serif;
-    background-color: #ff1111; /* base red */
+    background-color: var(--brand-red); /* base red */
 }
 
 /* Ensure Bootstrap variants use our red palette */
 .btn-primary,
 .btn-danger {
-    background-color: #ff1111;
-    border-color: #ff1111;
+    background-color: var(--brand-red);
+    border-color: var(--brand-red);
     color: #fff;
 }
 
 /* Ensure outline-danger shows red border and red text */
 .btn-outline-danger {
-    color: #ff1111;
-    border-color: #ff1111;
+    color: var(--brand-red);
+    border-color: var(--brand-red);
 }
 
 /* Hover: lighter shade of red only */
@@ -140,8 +127,8 @@ html {
 .btn-primary:hover,
 .btn-danger:hover,
 .btn-outline-danger:hover {
-    background-color: #ff4d4d; /* lighter red */
-    border-color: #ff4d4d;
+    background-color: var(--brand-red-hover); /* lighter red */
+    border-color: var(--brand-red-hover);
     color: #fff;
     transition: 0.25s;
 }
@@ -236,6 +223,27 @@ html {
 .carousel .carousel-control-prev { left: 0.75rem; }
 .carousel .carousel-control-next { right: 0.75rem; }
 
+
+/* Extra small devices: hide verbose logo text and tighten spacing */
+@media (max-width: 350px) {
+    .navbar-brand img.logo-name { display: none; }
+    .navbar-brand img.logo-symbol { max-height: 44px; }
+    .nav-item { margin-left: 0.25rem; }
+    .navbar-nav .nav-link { padding-top: 0.15rem; padding-bottom: 0.15rem; }
+}
+
+/* Reduce header logo sizes on small screens to avoid layout zooming in device emulation */
+@media (max-width: 576px) {
+    .navbar-brand img.logo-symbol { max-height: 48px; }
+    .navbar-brand img.logo-name { max-height: 52px; }
+    /* Reduce nav item spacing to fit smaller widths */
+    .nav-item { margin-left: 0.5rem; }
+    .navbar-nav .nav-link { font-size: 100%; }
+    /* Shrink nav icons on small screens */
+    .nav-link .icon { width: 36px; height: 36px; }
+    .nav-link .icon2 { width: 24px; height: 24px; margin-left: 6px; }
+}
+
 @media (max-width: 768px) {
     /* move controls well outside carousel on small screens */
     .carousel { overflow: visible; }
@@ -246,41 +254,6 @@ html {
         height: 3.4rem;
         z-index: 999;
         touch-action: manipulation;
-    }
-}
-
-@media (max-width: 480px) {
-    /* extra-small: place arrows further off the carousel so they don't overlap thumbnails */
-    .carousel { overflow: visible; }
-    .carousel .carousel-control-prev { left: -5rem; }
-    .carousel .carousel-control-next { right: -5rem; }
-    .carousel .carousel-control-prev, .carousel .carousel-control-next {
-        width: 3.6rem;
-        height: 3.6rem;
-        z-index: 999;
-        touch-action: manipulation;
-    }
-}
-
-/* Slightly enlarge the control icons for better tap targets on touch */
-.carousel-control-prev-icon,
-.carousel-control-next-icon {
-    background-size: 60% 60%;
-}
-
-/* Zmenšené na veľmi malé obrazovky */
-@media (max-width: 480px) {
-    .book-card {
-        flex: 0 0 25%; /* stále 4 knihy, len menšie */
-        max-width: 25%;
-    }
-    .book-card .card-body h5,
-    .book-card .card-body h6,
-    .book-card .card-body .btn {
-        font-size: 0.7rem;
-    }
-    .book-cover {
-        height: auto;
     }
 }
 
@@ -328,41 +301,6 @@ html {
     width: 60px;
     height: auto;
 }
-
-.admin-panel-fab {
-    font-size: 140%;
-    background-color: #0000ac;
-    position: fixed;
-    right: 1.5rem;
-    bottom: 1.5rem;
-    /* Ensure FAB sits below Bootstrap modal/backdrop so it doesn't remain interactive above a modal */
-    z-index: 1020;
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-}
-
-.admin-panel-fab:hover {
-    background-color: #0000e3;
-    color: white;
-}
-
-/* End of global styles - wishlist styles moved to public/css/wishlist.css */
-
-/* Mobile navbar search tweaks: ensure input is visible and grows to fill space left of the button */
-@media (max-width: 767.98px) {
-    .navbar-search-mobile .form-control {
-        display: block;
-        flex: 1 1 auto;
-        min-width: 0; /* allow flex children to shrink correctly inside flex containers */
-        background: #fff;
-        border: 1px solid #ced4da;
-        box-shadow: none;
-    }
-    .navbar-search-mobile .btn {
-        margin-left: .5rem;
-        flex: 0 0 auto;
-    }
-}
-
 
 /* Interaction overrides: remove blue on click/tap but allow light-grey hover and keyboard focus ring */
 .dropdown-toggle,

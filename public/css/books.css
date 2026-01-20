@@ -18,12 +18,17 @@ html, body {
     background-color: #f8f9fa; /* subtle background when image has different aspect ratio */
 }
 
-/* Reduce image height on smaller screens so layout doesn't appear 'desktop-scaled' */
+/* Tablet: slightly smaller than desktop */
 @media (max-width: 992px) {
     .book-cover { max-height: 180px; }
 }
+
+/* Mobile: make covers noticeably bigger (they were capped too aggressively) */
 @media (max-width: 576px) {
-    .book-cover { max-height: 120px; }
+    .book-cover {
+        max-height: 200px;
+        min-height: 170px;
+    }
 }
 
 /* Wrapper to center the books section and limit width to ~70% of screen */

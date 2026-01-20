@@ -270,7 +270,7 @@
         </div>
     </div>
 
-    <!-- Series add/edit/delete modals -->
+    <!-- Series add/edit modals -->
     <div class="modal fade" id="adminAddSeriesModal" tabindex="-1" aria-labelledby="adminAddSeriesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -312,28 +312,6 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
                         <button type="submit" class="btn btn-primary">Uložiť zmeny</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="adminDeleteSeriesModal" tabindex="-1" aria-labelledby="adminDeleteSeriesModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <form action="<?= $link->url('Admin.seriesDelete') ?>" method="post" id="admin-delete-series-form">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="adminDeleteSeriesModalLabel">Potvrdiť odstránenie série</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="id" id="modal-delete-series-id" value="">
-                        <p>Chcete odstrániť sériu <strong id="modal-delete-series-name"></strong>?<br>
-                            (Poznámka: knihy v tejto sérii nebudú odstránené automaticky.)</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušiť</button>
-                        <button type="submit" class="btn btn-danger">Odstrániť sériu</button>
                     </div>
                 </form>
             </div>

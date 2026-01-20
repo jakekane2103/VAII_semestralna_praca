@@ -124,4 +124,49 @@ class User implements IIdentity
 
         return null;
     }
+
+    /**
+     * Normalize email for case-insensitive comparisons/storing.
+     */
+    public static function normalizeEmail(string $email): string
+    {
+        return mb_strtolower(trim($email));
+    }
+
+    /**
+     * Returns whether a customer with given email exists.
+     */
+    public static function emailExists(string $email): bool
+    {
+        $email = self::normalizeEmail($email);
+
+        $conn = Connection::getInstance();
+        $stmt = $conn->prepare('SELECT id_zakaznik FROM zakaznik WHERE email = :email LIMIT 1');
+        $stmt->execute([':email' => $email]);
+        return (bool)$stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Create a new customer record in `zakaznik`.
+     *
+     * Expected keys in $data: meno, priezvisko, email, passwordHash.
+     * Uses email as username (pouzivatelske_meno) to match current controller behavior.
+     */
+    public static function createCustomer(array $data): bool
+    {
+        $email = self::normalizeEmail((string)($data['email'] ?? ''));
+        $meno = (string)($data['meno'] ?? '');
+        $priezvisko = (string)($data['priezvisko'] ?? '');
+        $passwordHash = (string)($data['passwordHash'] ?? '');
+
+        $conn = Connection::getInstance();
+        $stmt = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
+        return $stmt->execute([
+            ':uname' => $email,
+            ':meno' => $meno,
+            ':priezvisko' => $priezvisko,
+            ':email' => $email,
+            ':heslo' => $passwordHash
+        ]);
+    }
 }

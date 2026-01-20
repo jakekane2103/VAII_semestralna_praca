@@ -48,13 +48,20 @@
 
         // Wire delete buttons
         qsa('.admin-delete-button').forEach(function (btn) {
-            // prefer pointerdown to avoid other handlers interfering but keep click as final
-            btn.addEventListener('pointerdown', function (e) { if (e && e.stopPropagation) e.stopPropagation(); }, { passive: true });
-            btn.addEventListener('click', function (e) { if (e && e.preventDefault) e.preventDefault(); openDeleteModalForBook(btn); });
+            // stopPropagation prevents row click from opening edit when pressing delete
+            btn.addEventListener('click', function (e) {
+                if (e && e.preventDefault) e.preventDefault();
+                if (e && e.stopPropagation) e.stopPropagation();
+                openDeleteModalForBook(btn);
+            });
         });
 
         qsa('.admin-delete-series').forEach(function (btn) {
-            btn.addEventListener('click', function (e) { if (e && e.preventDefault) e.preventDefault(); openDeleteModalForSeries(btn); });
+            btn.addEventListener('click', function (e) {
+                if (e && e.preventDefault) e.preventDefault();
+                if (e && e.stopPropagation) e.stopPropagation();
+                openDeleteModalForSeries(btn);
+            });
         });
 
         // Reset shared delete modal to defaults when hidden
@@ -76,9 +83,6 @@
 
         function openEditBookFromRow(row) {
             if (!row) return;
-            // ignore clicks originating from delete buttons
-            var lastClicked = window._lastAdminClickTarget;
-            if (lastClicked && typeof lastClicked.closest === 'function' && lastClicked.closest('.admin-delete-button')) return;
 
             var id = row.getAttribute('data-id') || '';
             var nazov = row.getAttribute('data-nazov') || '';
@@ -110,12 +114,16 @@
                 for (var i = 0; i < seriesSelectEl.options.length; i++) {
                     if (String(seriesSelectEl.options[i].value) === String(seriesId)) {
                         seriesSelectEl.value = String(seriesId);
-                        found = true; break;
+                        found = true;
+                        break;
                     }
                 }
                 if (!found && (seriesId || seriesName)) {
                     seriesSelectEl.value = 'new';
-                    if (seriesNewEl) { seriesNewEl.classList.remove('d-none'); seriesNewEl.value = seriesName || ''; }
+                    if (seriesNewEl) {
+                        seriesNewEl.classList.remove('d-none');
+                        seriesNewEl.value = seriesName || '';
+                    }
                 } else {
                     if (seriesNewEl) seriesNewEl.classList.add('d-none');
                 }
@@ -124,11 +132,12 @@
             if (adminEditModal) adminEditModal.show();
         }
 
-        // Track last click target to help ignore delete button-originated row clicks
-        document.addEventListener('pointerdown', function (e) { window._lastAdminClickTarget = e.target; }, { capture: true, passive: true });
-
         qsa('.admin-book-row').forEach(function (row) {
-            row.addEventListener('click', function (e) { openEditBookFromRow(row); });
+            row.addEventListener('click', function (e) {
+                // ignore clicks on delete button inside row
+                if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('.admin-delete-button')) return;
+                openEditBookFromRow(row);
+            });
         });
 
         // --- Edit series modal (rows clickable) ---
@@ -154,21 +163,9 @@
                 if (active && typeof active.closest === 'function' && active.closest('.admin-delete-series')) return;
                 var k = e.key || e.keyIdentifier || '';
                 if (k === 'Enter' || k === ' ' || k === 'Spacebar' || k === 'Space') {
-                    e.preventDefault(); row.click();
+                    e.preventDefault();
+                    row.click();
                 }
-            });
-        });
-
-        // Also provide handlers for elements explicitly marked as edit buttons (if present)
-        qsa('.admin-edit-series').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var id = btn.getAttribute('data-id');
-                var name = btn.getAttribute('data-name');
-                var idEl = qs('#edit-series-id');
-                var nameEl = qs('#edit-series-name');
-                if (idEl) idEl.value = id;
-                if (nameEl) nameEl.value = name;
-                if (editSeriesModal) editSeriesModal.show();
             });
         });
 
@@ -186,8 +183,13 @@
         // --- Toggle new-series input for add/edit selects ---
         function toggleNewSeriesInput(selectEl, newInputEl) {
             if (!selectEl || !newInputEl) return;
-            if (selectEl.value === 'new') { newInputEl.classList.remove('d-none'); try { newInputEl.focus(); } catch (e) {} }
-            else { newInputEl.classList.add('d-none'); newInputEl.value = ''; }
+            if (selectEl.value === 'new') {
+                newInputEl.classList.remove('d-none');
+                try { newInputEl.focus(); } catch (e) {}
+            } else {
+                newInputEl.classList.add('d-none');
+                newInputEl.value = '';
+            }
         }
 
         var addSeriesSelect = qs('#add-series');
@@ -202,7 +204,10 @@
         var adminAddForm = qs('#admin-add-form-modal');
         if (addBookModalEl && adminAddForm) {
             addBookModalEl.addEventListener('hidden.bs.modal', function () {
-                try { adminAddForm.reset(); if (addSeriesNew) addSeriesNew.classList.add('d-none'); } catch (e) {}
+                try {
+                    adminAddForm.reset();
+                    if (addSeriesNew) addSeriesNew.classList.add('d-none');
+                } catch (e) {}
             });
         }
 
@@ -212,21 +217,33 @@
         var booksSection = qsa('.admin-overview-books');
         var seriesSection = qsa('.admin-overview-series');
 
-        function showBooks() { booksSection.forEach(function (el) { el.classList.remove('d-none'); }); seriesSection.forEach(function (el) { el.classList.add('d-none'); }); }
-        function showSeries() { seriesSection.forEach(function (el) { el.classList.remove('d-none'); }); booksSection.forEach(function (el) { el.classList.add('d-none'); }); }
+        function showBooks() {
+            booksSection.forEach(function (el) { el.classList.remove('d-none'); });
+            seriesSection.forEach(function (el) { el.classList.add('d-none'); });
+        }
+        function showSeries() {
+            seriesSection.forEach(function (el) { el.classList.remove('d-none'); });
+            booksSection.forEach(function (el) { el.classList.add('d-none'); });
+        }
 
         function setActiveActionButtons(showBooksView) {
             var bookBtn = qs('#admin-open-add-book');
             var seriesBtn = qs('#admin-open-add-series');
-            if (bookBtn) { if (showBooksView) bookBtn.classList.add('active'); else bookBtn.classList.remove('active'); }
-            if (seriesBtn) { if (showBooksView) seriesBtn.classList.remove('active'); else seriesBtn.classList.add('active'); }
+            if (bookBtn) {
+                if (showBooksView) bookBtn.classList.add('active');
+                else bookBtn.classList.remove('active');
+            }
+            if (seriesBtn) {
+                if (showBooksView) seriesBtn.classList.remove('active');
+                else seriesBtn.classList.add('active');
+            }
         }
 
         if (rbBooks) rbBooks.addEventListener('change', function () { if (this.checked) { showBooks(); setActiveActionButtons(true); } });
         if (rbSeries) rbSeries.addEventListener('change', function () { if (this.checked) { showSeries(); setActiveActionButtons(false); } });
 
         // Ensure initial state
-        setActiveActionButtons(rbBooks && rbBooks.checked);
+        setActiveActionButtons(!!(rbBooks && rbBooks.checked));
 
         // --- Header height CSS variable updater (for modal offset) ---
         function updateHeaderHeightVar() {
@@ -237,8 +254,13 @@
                 document.documentElement.style.setProperty('--header-height', Math.ceil(h) + 'px');
             } catch (e) { /* ignore */ }
         }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', updateHeaderHeightVar); else updateHeaderHeightVar();
+
+        // DOM is ready here already
+        updateHeaderHeightVar();
         var _resizeTimer = null;
-        window.addEventListener('resize', function () { clearTimeout(_resizeTimer); _resizeTimer = setTimeout(updateHeaderHeightVar, 120); });
+        window.addEventListener('resize', function () {
+            clearTimeout(_resizeTimer);
+            _resizeTimer = setTimeout(updateHeaderHeightVar, 120);
+        });
     });
 })();

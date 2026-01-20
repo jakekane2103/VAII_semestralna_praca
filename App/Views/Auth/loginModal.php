@@ -1,23 +1,36 @@
 <?php
-/** @var string|null $message */ /**
- * @var \Framework\Support\LinkGenerator $link */ /**
- * @var \Framework\Support\View $view
- */
+/** @var \Framework\Support\LinkGenerator $link */
+/** @var \Framework\Support\View $view */
 
-// Ensure session is active and read any auth error set by AuthController
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    @session_start();
+// Read any login error set by AuthController (prefer framework session if available)
+$authError = null;
+try {
+    if (method_exists($view, 'app') && $view->app()?->getSession()) {
+        $session = $view->app()->getSession();
+        $authError = $session->get('auth_login_error');
+        if ($authError !== null) {
+            $session->remove('auth_login_error');
+        }
+    }
+} catch (\Throwable $e) {
+    // ignore and fall back
 }
-$authError = $_SESSION['auth_login_error'] ?? null;
-if ($authError) {
-    // remove it so it doesn't persist
-    unset($_SESSION['auth_login_error']);
+
+// Fallback if view/app session isn't accessible in this template
+if ($authError === null) {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    $authError = $_SESSION['auth_login_error'] ?? null;
+    if ($authError) {
+        unset($_SESSION['auth_login_error']);
+    }
 }
 
 $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authError !== null;
 ?>
 
-    <!-- LOGIN MODAL -->
+<!-- LOGIN MODAL -->
 <div class="modal fade" id="loginModal" tabindex="-1"<?= $shouldOpen ? ' data-open="1"' : '' ?>>
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content p-4">
@@ -28,7 +41,7 @@ $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authE
 
             <?php if ($authError): ?>
                 <div class="alert alert-danger mx-3" role="alert">
-                    <?= htmlspecialchars($authError, ENT_QUOTES, 'UTF-8') ?>
+                    <?= htmlspecialchars((string)$authError, ENT_QUOTES, 'UTF-8') ?>
                 </div>
             <?php endif; ?>
 
@@ -64,3 +77,4 @@ $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authE
 </div>
 
 <?php
+

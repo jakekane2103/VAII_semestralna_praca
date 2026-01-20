@@ -14,9 +14,9 @@ class CartController extends BaseController
 {
     public function authorize(Request $request, string $action): bool
     {
-        // Allow guest access to viewing and adding to cart (session-based). Other actions require login.
+        // Allow guest access for cart interactions (session-based). Only checkout / placing an order requires login.
         $a = strtolower((string)$action);
-        if (in_array($a, ['index', 'add', 'checkout'], true)) {
+        if (in_array($a, ['index', 'add', 'update', 'remove'], true)) {
             return true;
         }
 
@@ -120,9 +120,7 @@ class CartController extends BaseController
     {
         $auth = $this->app->getAuth();
         $user = $auth?->getUser();
-        if (!$user || $user->getId() === null) {
-            return $this->redirect($this->url('home.index', ['openLogin' => 1]));
-        }
+        $userId = ($user && $user->getId() !== null) ? (int)$user->getId() : null;
 
         $bookId = (int)($request->value('id') ?? 0);
         $delta = (int)($request->value('delta') ?? 0);
@@ -131,7 +129,27 @@ class CartController extends BaseController
         }
 
         $cartModel = new Cart();
-        $cartModel->updateDbQty((int)$user->getId(), $bookId, $delta);
+
+        // Guest flow -> session cart
+        if ($userId === null) {
+            $session = $this->app->getSession();
+            $cart = $session->get('cart', []);
+
+            // Reuse addToSessionCart for +1 and -1 by clamping at 0
+            $current = (int)($cart[$bookId] ?? 0);
+            $next = max(0, $current + $delta);
+            if ($next <= 0) {
+                unset($cart[$bookId]);
+            } else {
+                $cart[$bookId] = $next;
+            }
+            $session->set('cart', $cart);
+
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        // Logged-in flow -> DB cart
+        $cartModel->updateDbQty($userId, $bookId, $delta);
 
         return $this->redirect($this->url('Cart.index'));
     }
@@ -143,9 +161,7 @@ class CartController extends BaseController
     {
         $auth = $this->app->getAuth();
         $user = $auth?->getUser();
-        if (!$user || $user->getId() === null) {
-            return $this->redirect($this->url('home.index', ['openLogin' => 1]));
-        }
+        $userId = ($user && $user->getId() !== null) ? (int)$user->getId() : null;
 
         $bookId = (int)($request->value('id') ?? 0);
         if ($bookId <= 0) {
@@ -153,7 +169,19 @@ class CartController extends BaseController
         }
 
         $cartModel = new Cart();
-        $cartModel->removeFromDbCart((int)$user->getId(), $bookId);
+
+        // Guest flow -> session cart
+        if ($userId === null) {
+            $session = $this->app->getSession();
+            $cart = $session->get('cart', []);
+            unset($cart[$bookId]);
+            $session->set('cart', $cart);
+
+            return $this->redirect($this->url('Cart.index'));
+        }
+
+        // Logged-in flow -> DB cart
+        $cartModel->removeFromDbCart($userId, $bookId);
 
         return $this->redirect($this->url('Cart.index'));
     }
@@ -165,6 +193,9 @@ class CartController extends BaseController
     {
         $auth = $this->app->getAuth();
         $user = $auth?->getUser();
+        if (!$user || $user->getId() === null) {
+            return $this->redirect($this->url('home.index', ['openLogin' => 1]));
+        }
 
         $items = [];
         $total = 0.0;

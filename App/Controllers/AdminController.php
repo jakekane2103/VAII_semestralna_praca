@@ -63,38 +63,14 @@ class AdminController extends BaseController
 
         // Fetch a random welcome message from the witWisdom table (fall back to the original line on error)
         $defaultWelcome = 'Správa kníh: pridávajte nové tituly, aktualizujte existujúce alebo ich odstraňujte.';
+        $welcome = $defaultWelcome;
         try {
-            $welcome = $defaultWelcome;
             $conn = Connection::getInstance();
-            // Try primary table name first
-            try {
-                $wstmt = $conn->prepare('SELECT line FROM witWisdom ORDER BY RAND() LIMIT 1');
-                $wstmt->execute();
-                $row = $wstmt->fetch(\PDO::FETCH_ASSOC);
-                if ($row && isset($row['line']) && trim($row['line']) !== '') {
-                    $welcome = $row['line'];
-                } else {
-                    // fallback to alternate table name
-                    $wstmt = $conn->prepare('SELECT line FROM witWisdom ORDER BY RAND() LIMIT 1');
-                    $wstmt->execute();
-                    $row = $wstmt->fetch(\PDO::FETCH_ASSOC);
-                    if ($row && isset($row['line']) && trim($row['line']) !== '') {
-                        $welcome = $row['line'];
-                    }
-                }
-            } catch (\Exception $inner) {
-                // Try alternate table name if primary failed (table missing, etc.)
-                try {
-                    $wstmt = $conn->prepare('SELECT line FROM witWisdom ORDER BY RAND() LIMIT 1');
-                    $wstmt->execute();
-                    $row = $wstmt->fetch(\PDO::FETCH_ASSOC);
-                    if ($row && isset($row['line']) && trim($row['line']) !== '') {
-                        $welcome = $row['line'];
-                    }
-                } catch (\Exception $inner2) {
-                    // ignore and keep default
-                    $welcome = $defaultWelcome;
-                }
+            $wstmt = $conn->prepare('SELECT line FROM witWisdom ORDER BY RAND() LIMIT 1');
+            $wstmt->execute();
+            $row = $wstmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row && isset($row['line']) && trim($row['line']) !== '') {
+                $welcome = $row['line'];
             }
         } catch (\Exception $e) {
             // ignore and keep default welcome

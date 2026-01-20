@@ -3,11 +3,10 @@
 namespace App\Controllers;
 
 use App\Configuration;
-use Exception;
+use App\Models\User;
 use Framework\Core\BaseController;
 use Framework\Http\Request;
 use Framework\Http\Responses\Response;
-use Framework\Http\Responses\ViewResponse;
 
 /**
  * Class AuthController
@@ -41,7 +40,6 @@ class AuthController extends BaseController
      *
      * @return Response The response object which can either redirect on success or render the login view with
      *                  an error message on failure.
-     * @throws Exception If the parameter for the URL generator is invalid throws an exception.
      */
     public function login(Request $request): Response
     {
@@ -50,40 +48,42 @@ class AuthController extends BaseController
             return $this->redirect($this->url('home.index'));
         }
 
-        // Handle login POST
         $username = (string)$request->value('username');
         $password = (string)$request->value('password');
-        $ok = $this->app->getAuth()->login($username, $password);
-        if ($ok) {
+
+        if ($this->app->getAuth()->login($username, $password)) {
             // Redirect back to referer so navbar updates; but if referer is an auth page, send to home instead
             $referer = $request->server('HTTP_REFERER');
-            if ($referer && is_string($referer) && $referer !== '') {
-                // Heuristics: if referer looks like an auth area URL (query c=auth, path contains /auth, or contains known auth routes), treat it as auth and ignore it
+            if (is_string($referer) && $referer !== '') {
                 $isAuthReferer = false;
                 try {
-                    $query = parse_url($referer, PHP_URL_QUERY) ?: '';
+                    $query = (string)(parse_url($referer, PHP_URL_QUERY) ?: '');
                     parse_str($query, $qs);
                     if (isset($qs['c']) && strtolower((string)$qs['c']) === 'auth') {
                         $isAuthReferer = true;
                     }
 
-                    $path = parse_url($referer, PHP_URL_PATH) ?: '';
+                    $path = (string)(parse_url($referer, PHP_URL_PATH) ?: '');
                     if (!$isAuthReferer && stripos($path, '/auth') !== false) {
                         $isAuthReferer = true;
                     }
 
-                    // also check for route identifiers that may be embedded in friendly URLs
-                    if (!$isAuthReferer && (stripos($referer, 'auth.login') !== false || stripos($referer, 'auth.signUp') !== false || stripos($referer, 'auth.loginModal') !== false)) {
+                    if (!$isAuthReferer && (
+                        stripos($referer, 'auth.login') !== false ||
+                        stripos($referer, 'auth.signUp') !== false ||
+                        stripos($referer, 'auth.loginModal') !== false
+                    )) {
                         $isAuthReferer = true;
                     }
                 } catch (\Throwable $e) {
-                    // if URL parsing fails, fall back to safe behavior
+                    // ignore and fall back to safe behavior
                 }
 
                 if (!$isAuthReferer) {
                     return $this->redirect($referer);
                 }
             }
+
             return $this->redirect($this->url('home.index'));
         }
 
@@ -98,7 +98,7 @@ class AuthController extends BaseController
      * This action terminates the user's session and redirects them to a view. It effectively clears any authentication
      * tokens or session data associated with the user.
      *
-     * @return ViewResponse The response object that renders the logout view.
+     * @return Response
      */
     public function logout(Request $request): Response
     {
@@ -130,84 +130,58 @@ class AuthController extends BaseController
 
         // Basic validation
         if ($meno === '' || $priezvisko === '' || $email === '' || $password === '') {
-            $message = 'Vyplňte všetky povinné polia.';
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Vyplňte všetky povinné polia.'], 'signUp');
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $message = 'Neplatná e-mailová adresa.';
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Neplatná e-mailová adresa.'], 'signUp');
         }
 
         if ($password !== $passwordConfirm) {
-            $message = 'Heslá sa nezhodujú.';
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Heslá sa nezhodujú.'], 'signUp');
         }
 
         if (strlen($password) < 6) {
-            $message = 'Heslo musí mať aspoň 6 znakov.';
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Heslo musí mať aspoň 6 znakov.'], 'signUp');
         }
 
         if (!$gdpr) {
-            $message = 'Musíte súhlasiť s ochranou osobných údajov.';
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Musíte súhlasiť s ochranou osobných údajov.'], 'signUp');
         }
 
-        // Check for existing email
+        $emailNormalized = User::normalizeEmail($email);
+
         try {
-            $conn = \Framework\DB\Connection::getInstance();
-
-            // Normalize email for uniqueness checks (case-insensitive)
-            $email = mb_strtolower($email);
-
-            // Leaner existence check: fetch at most one row
-            $check = $conn->prepare('SELECT id_zakaznik FROM zakaznik WHERE email = :email LIMIT 1');
-            $check->execute([':email' => $email]);
-            $exists = $check->fetch(\PDO::FETCH_ASSOC);
-            if ($exists) {
-                $message = 'E-mail už existuje. Ak máte účet, prihláste sa.';
-                return $this->html(['message' => $message], 'signUp');
+            if (User::emailExists($emailNormalized)) {
+                return $this->html(['message' => 'E-mail už existuje. Ak máte účet, prihláste sa.'], 'signUp');
             }
 
-            // Hash password and attempt insert. If a concurrent insert created the same email,
-            // the database unique constraint (recommended) will cause an exception that we catch below.
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $username = $email; // use email as username by default
 
-            try {
-                $insert = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
-                $ok = $insert->execute([
-                    ':uname' => $username,
-                    ':meno' => $meno,
-                    ':priezvisko' => $priezvisko,
-                    ':email' => $email,
-                    ':heslo' => $hash
-                ]);
+            $ok = User::createCustomer([
+                'meno' => $meno,
+                'priezvisko' => $priezvisko,
+                'email' => $emailNormalized,
+                'passwordHash' => $hash,
+            ]);
 
-                if ($ok) {
-                    // Redirect to login page after registration
-                    return $this->redirect($this->url('auth.login'));
-                }
-
-                $message = 'Registrácia zlyhala. Skúste to neskôr.';
-                return $this->html(['message' => $message], 'signUp');
-            } catch (\PDOException $e) {
-                // Look for SQLSTATE codes that indicate unique constraint violation.
-                // Common codes: '23000' (MySQL), '23505' (Postgres).
-                $sqlState = isset($e->errorInfo[0]) ? $e->errorInfo[0] : $e->getCode();
-                if (in_array($sqlState, ['23000', '23505'], true)) {
-                    $message = 'E-mail už existuje. Ak máte účet, prihláste sa.';
-                    return $this->html(['message' => $message], 'signUp');
-                }
-                // Other DB errors
-                $message = 'Chyba pri ukladaní do databázy: ' . $e->getMessage();
-                return $this->html(['message' => $message], 'signUp');
+            if ($ok) {
+                // Redirect to login page after registration
+                return $this->redirect($this->url('auth.login'));
             }
 
+            return $this->html(['message' => 'Registrácia zlyhala. Skúste to neskôr.'], 'signUp');
+        } catch (\PDOException $e) {
+            // Look for SQLSTATE codes that indicate unique constraint violation.
+            // Common codes: '23000' (MySQL), '23505' (Postgres).
+            $sqlState = isset($e->errorInfo[0]) ? $e->errorInfo[0] : $e->getCode();
+            if (in_array($sqlState, ['23000', '23505'], true)) {
+                return $this->html(['message' => 'E-mail už existuje. Ak máte účet, prihláste sa.'], 'signUp');
+            }
+
+            return $this->html(['message' => 'Chyba pri ukladaní do databázy: ' . $e->getMessage()], 'signUp');
         } catch (\Exception $e) {
-            $message = 'Chyba pri ukladaní do databázy: ' . $e->getMessage();
-            return $this->html(['message' => $message], 'signUp');
+            return $this->html(['message' => 'Chyba pri ukladaní do databázy: ' . $e->getMessage()], 'signUp');
         }
     }
 }

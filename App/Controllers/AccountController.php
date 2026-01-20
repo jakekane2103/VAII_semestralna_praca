@@ -13,7 +13,9 @@ class AccountController extends BaseController
     // Require user to be logged in for account actions
     public function authorize(Request $request, string $action): bool
     {
-        return $this->app->getAuth() !== null && $this->app->getAuth()->isLogged();
+        // Avoid calling getAuth() twice; read once and test
+        $auth = $this->app->getAuth();
+        return $auth !== null && $auth->isLogged();
     }
 
     // Implement BaseController::index - delegate to edit page
@@ -43,8 +45,9 @@ class AccountController extends BaseController
         $session = $this->app->getSession();
         $success = $session->get('account_success', null);
         $error = $session->get('account_error', null);
-        if ($success) { $session->remove('account_success'); }
-        if ($error) { $session->remove('account_error'); }
+        // Remove flash keys unconditionally after reading to simplify logic
+        $session->remove('account_success');
+        $session->remove('account_error');
 
         return $this->html(['data' => $data, 'success' => $success, 'error' => $error]);
     }
