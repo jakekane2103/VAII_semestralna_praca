@@ -134,7 +134,7 @@ include __DIR__ . '/../Auth/loginModal.php';
         </div>
 
         <!-- MOBILE search bar under navbar -->
-        <div class="navbar-search-mobile d-md-none px-3 py-2 w-100">
+        <div class="d-md-none px-3 py-2 w-100">
             <form class="d-flex" role="search" method="GET" action="<?= $link->url('books.index', [], true) ?>">
                 <label for="mobile-search-input" class="visually-hidden">Hľadať knihy</label>
                 <input type="hidden" name="c" value="books">

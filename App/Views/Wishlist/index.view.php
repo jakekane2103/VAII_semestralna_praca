@@ -17,7 +17,7 @@
                 </div>
             <?php } else { ?>
                 <!-- Rows list for drag & drop ordering -->
-                <div id="wishlist-grid" class="wishlist-rows" aria-live="polite">
+                <div id="wishlist-grid" class="wishlist-rows" aria-live="polite" data-wishlist-reorder-url="<?= htmlspecialchars($link->url('Wishlist.reorder'), ENT_QUOTES, 'UTF-8') ?>">
                     <?php foreach ($items as $item) {
                         $id = htmlspecialchars($item['id'] ?? $item['id_kniha'] ?? '', ENT_QUOTES, 'UTF-8');
                         $title = htmlspecialchars($item['nazov'] ?? $item['nazev'] ?? $item['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8');
@@ -67,11 +67,6 @@
         </div>
     </div>
 </div>
-
-<script>
-    // Provide reorder endpoint to wishlist.js/cart.js
-    window.WISHLIST_REORDER_URL = <?= json_encode($link->url('Wishlist.reorder')) ?>;
-</script>
 
 <!-- Load wishlist.js for drag&drop ranking and reorder AJAX (move/remove handled elsewhere). -->
 <script src="<?= $link->asset('js/wishlist.js') ?>"></script>

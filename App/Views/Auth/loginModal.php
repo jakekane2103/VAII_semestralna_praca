@@ -2,32 +2,18 @@
 /** @var \Framework\Support\LinkGenerator $link */
 /** @var \Framework\Support\View $view */
 
-// Read any login error set by AuthController (prefer framework session if available)
+// Obtain login modal context (error + shouldOpen) from AuthController helper
 $authError = null;
+$shouldOpen = false;
 try {
-    if (method_exists($view, 'app') && $view->app()?->getSession()) {
-        $session = $view->app()->getSession();
-        $authError = $session->get('auth_login_error');
-        if ($authError !== null) {
-            $session->remove('auth_login_error');
-        }
-    }
+    $appInst = (isset($view) && method_exists($view, 'app')) ? $view->app() : null;
+    $ctx = \App\Controllers\AuthController::getLoginModalContext($appInst);
+    $authError = $ctx['authError'] ?? null;
+    $shouldOpen = !empty($ctx['shouldOpen']);
 } catch (\Throwable $e) {
-    // ignore and fall back
+    $authError = null;
+    $shouldOpen = false;
 }
-
-// Fallback if view/app session isn't accessible in this template
-if ($authError === null) {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        @session_start();
-    }
-    $authError = $_SESSION['auth_login_error'] ?? null;
-    if ($authError) {
-        unset($_SESSION['auth_login_error']);
-    }
-}
-
-$shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $authError !== null;
 ?>
 
 <!-- LOGIN MODAL -->

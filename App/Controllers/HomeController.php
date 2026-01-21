@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\Book;
 use Framework\Core\BaseController;
 use Framework\Http\Request;
 use Framework\Http\Responses\Response;
@@ -34,12 +35,31 @@ class HomeController extends BaseController
      * Displays the default home page.
      *
      * This action serves the main HTML view of the home page.
+     * Fetches randomized books for featured carousels and passes them to the view.
      *
      * @return Response The response object containing the rendered HTML for the home page.
      */
     public function index(Request $request): Response
     {
-        return $this->html();
+        $sections = [
+            ['id' => 'carouselSeriesBest', 'nazov' => 'Bestsellery'],
+            ['id' => 'carouselSeriesNew', 'nazov' => 'Nové vydania'],
+            ['id' => 'carouselSeriesUpcoming', 'nazov' => 'Nadchádzajúce vydania'],
+        ];
+
+        $bookModel = new Book();
+        $out = [];
+        foreach ($sections as $s) {
+            try {
+                $books = $bookModel->getRandomBooks(12);
+            } catch (\Throwable $e) {
+                // On DB error, don't break the whole page — provide an empty list
+                $books = [];
+            }
+            $out[] = ['id' => $s['id'], 'nazov' => $s['nazov'], 'books' => $books];
+        }
+
+        return $this->html(['sections' => $out]);
     }
 
     /**

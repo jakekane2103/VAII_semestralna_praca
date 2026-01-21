@@ -248,4 +248,24 @@ class Book
         return $rows;
     }
 
+    /**
+     * Fetch a randomized list of books for carousels or featured sections.
+     * Returns associative rows with keys matching the database columns used in views.
+     *
+     * @param int $limit
+     * @return array<int, array<string,mixed>>
+     */
+    public function getRandomBooks(int $limit = 12): array
+    {
+        $conn = Connection::getInstance();
+        $limit = max(1, (int)$limit);
+
+        // Using explicit int interpolation for LIMIT to avoid driver quirks with bound params
+        $sql = "SELECT id_kniha, nazov, autor, cena, obrazok FROM kniha ORDER BY RAND() LIMIT " . $limit;
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        return $rows;
+    }
+
 }

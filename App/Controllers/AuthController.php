@@ -19,6 +19,70 @@ use Framework\Http\Responses\Response;
 class AuthController extends BaseController
 {
     /**
+     * Pull (read + remove) a login error message stored in session.
+     *
+     * This helper centralizes session access for the login modal. It prefers the framework session (via the
+     * application instance) and falls back to native PHP session storage when necessary.
+     *
+     * @param mixed $app Optional application instance that exposes getSession(). May be null.
+     * @return string|null The login error message or null when none present.
+     */
+    public static function pullLoginError($app = null): ?string
+    {
+        // Prefer framework session when available
+        try {
+            if ($app && is_object($app) && method_exists($app, 'getSession')) {
+                $session = $app->getSession();
+                if ($session) {
+                    $err = $session->get('auth_login_error');
+                    if ($err !== null) {
+                        $session->remove('auth_login_error');
+                        return (string)$err;
+                    }
+                    return null;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore and fall back to native session
+        }
+
+        // Native PHP session fallback
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                @session_start();
+            }
+            $err = $_SESSION['auth_login_error'] ?? null;
+            if ($err !== null) {
+                unset($_SESSION['auth_login_error']);
+                return (string)$err;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns context values for the login modal: pulled auth error and whether modal should open.
+     *
+     * @param mixed $app Optional application instance exposing getSession().
+     * @return array{authError:?string, shouldOpen:bool}
+     */
+    public static function getLoginModalContext($app = null): array
+    {
+        $err = self::pullLoginError($app);
+        $shouldOpen = false;
+        try {
+            $shouldOpen = (isset($_GET['openLogin']) && $_GET['openLogin'] == '1') || $err !== null;
+        } catch (\Throwable $e) {
+            $shouldOpen = $err !== null;
+        }
+
+        return ['authError' => $err, 'shouldOpen' => $shouldOpen];
+    }
+
+    /**
      * Redirects to the login page.
      *
      * This action serves as the default landing point for the authentication section of the application, directing

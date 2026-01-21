@@ -171,3 +171,19 @@ html, body {
 .books-index .row.row-cols-1.row-cols-md-3 {
     margin-top: 10px;
 }
+
+/* Truncate long book descriptions to ~4 lines and show ellipsis when overflowed.
+   Uses -webkit-line-clamp where supported and a max-height fallback for other browsers. */
+.book-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2em;
+    /* small bottom padding to avoid clipping of descenders (g, y, p) */
+    padding-bottom: 0.35em;
+    box-sizing: border-box;
+    /* allow a tiny extra room beyond exactly 4 lines */
+    max-height: calc(1.2em * 4 + 0.35em);
+}

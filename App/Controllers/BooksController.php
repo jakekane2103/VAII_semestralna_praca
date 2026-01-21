@@ -73,8 +73,56 @@ class BooksController extends BaseController
             $series = [];
         }
 
+        // --- Prepare presentation-specific fields for each book to keep the view thin ---
+        $books = $result['books'];
+        foreach ($books as &$b) {
+            // detail URL
+            $b['detailUrl'] = $this->url('Books.detail', ['id' => $b['id'] ?? '']);
+
+            // author link (search-by-author)
+            $author = $b['autor'] ?? '';
+            $b['authorUrl'] = $author !== '' ? $this->url('Books.index', ['q' => $author, 'author' => 1]) : null;
+
+            // normalize image path (same rules as previous view code)
+            $rawImg = $b['obrazok'] ?? '';
+            if ($rawImg === null || $rawImg === '') {
+                $imgPath = 'images/placeholder-book.png';
+            } elseif (strpos($rawImg, '/') === false) {
+                $imgPath = 'images/books/' . $rawImg;
+            } else {
+                $imgPath = $rawImg;
+            }
+            $b['imgPath'] = $imgPath;
+
+            // book id used in forms and data attributes (keep as string)
+            $bookIdRaw = $b['id'] ?? $b['ISBN'] ?? $b['nazov'] ?? '';
+            $bookIdRaw = (string)$bookIdRaw;
+            $b['bookId'] = $bookIdRaw;
+
+            // wishlist state (boolean) and small helpers for classes/aria
+            $inWishlist = isset($wishlistMap[$bookIdRaw]);
+            $b['inWishlist'] = (bool)$inWishlist;
+            $b['btnClass'] = $inWishlist ? 'btn btn-danger' : 'btn btn-outline-danger';
+            $b['ariaPressed'] = $inWishlist ? 'true' : 'false';
+        }
+        unset($b);
+
+        // Build base params preserving the search query and author flag (used by pagination links)
+        $baseParams = [];
+        if ($q !== '') {
+            $baseParams['q'] = $q;
+        }
+        if (!empty($authorFlag)) {
+            $baseParams['author'] = 1;
+        }
+
+        // Asset paths used by the view
+        $wishIconOn = 'images/wishlistIconRed-outlineWhite.png';
+        $wishIconOff = 'images/wishlistIconWhite.png';
+        $cartIcon = 'images/cartIcon.png';
+
         return $this->html([
-            'books'        => $result['books'],
+            'books'        => $books,
             'q'            => $q,
             'authorFilter' => $authorFilter,
             'authorFlag'   => $authorFlag,
@@ -84,6 +132,12 @@ class BooksController extends BaseController
             'totalPages'   => $result['totalPages'],
             'perPage'      => $result['perPage'],
             'totalBooks'   => $result['totalBooks'],
+
+            // presentation helpers
+            'baseParams'   => $baseParams,
+            'wishIconOn'   => $wishIconOn,
+            'wishIconOff'  => $wishIconOff,
+            'cartIcon'     => $cartIcon,
         ]);
     }
 
@@ -109,6 +163,43 @@ class BooksController extends BaseController
         $wishlist = $session->get('wishlist', []);
         $inWishlist = in_array((string)($book['id'] ?? $id), array_map('strval', $wishlist), true);
 
-        return $this->html(['book' => $book, 'inWishlist' => $inWishlist], 'BookDetail');
+        // --- Prepare presentation-specific fields for the detail view ---
+        // normalize image path
+        $rawImg = $book['obrazok'] ?? '';
+        if ($rawImg === null || $rawImg === '') {
+            $imgPath = 'images/Real_Estate_(101).jpg';
+        } elseif (strpos($rawImg, '/') === false) {
+            $imgPath = 'images/books/' . $rawImg;
+        } else {
+            $imgPath = $rawImg;
+        }
+        $book['imgPath'] = $imgPath;
+
+        // author search link
+        $author = $book['autor'] ?? '';
+        $book['authorUrl'] = $author !== '' ? $this->url('Books.index', ['q' => $author]) : null;
+
+        // book id and wishlist state
+        $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '';
+        $bookIdRaw = (string)$bookIdRaw;
+        $book['bookId'] = $bookIdRaw;
+        $book['inWishlist'] = (bool)$inWishlist;
+        $book['btnClass'] = $inWishlist ? 'btn btn-danger px-4 btn-wishlist' : 'btn btn-outline-danger px-4 btn-wishlist';
+        $book['ariaPressed'] = $inWishlist ? 'true' : 'false';
+
+        // assets and urls used by the view
+        $wishIconOn = 'images/wishlistIconRed-outlineWhite.png';
+        $wishIconOff = 'images/wishlistIconWhite.png';
+        $cartIcon = 'images/cartIcon.png';
+
+        return $this->html([
+            'book' => $book,
+            'inWishlist' => $inWishlist,
+            'wishIconOn' => $wishIconOn,
+            'wishIconOff' => $wishIconOff,
+            'cartIcon' => $cartIcon,
+            'wishlistAddUrl' => $this->url('Wishlist.add'),
+            'wishlistRemoveUrl' => $this->url('Wishlist.remove'),
+        ], 'BookDetail');
     }
 }

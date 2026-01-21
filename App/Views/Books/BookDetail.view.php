@@ -6,22 +6,25 @@
 
 $isAdmin = $auth?->isLogged() && strtolower((string)($auth->user->name ?? '')) === 'admin';
 
-// Normalize image path once
-$rawImg = $book['obrazok'] ?? '';
-if ($rawImg === null || $rawImg === '') {
-    $imgPath = 'images/Real_Estate_(101).jpg';
-} elseif (strpos($rawImg, '/') === false) {
-    $imgPath = 'images/books/' . $rawImg;
-} else {
-    $imgPath = $rawImg;
-}
-
-$wishIconOn = 'images/wishlistIconRed-outlineWhite.png';
-$wishIconOff = 'images/wishlistIconWhite.png';
-$cartIcon = 'images/cartIcon.png';
+// Fallbacks if controller did not provide them (keeps backward compatibility)
+$imgPath = $book['imgPath'] ?? ($book['obrazok'] ?? 'images/Real_Estate_(101).jpg');
+$authorUrl = $book['authorUrl'] ?? (!empty($book['autor']) ? $link->url('Books.index', ['q' => $book['autor']]) : null);
+$bookId = htmlspecialchars((string)($book['bookId'] ?? ($book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '')), ENT_QUOTES, 'UTF-8');
+$isIn = filter_var($book['inWishlist'] ?? ($inWishlist ?? false), FILTER_VALIDATE_BOOLEAN);
+$btnClass = $book['btnClass'] ?? ($isIn ? 'btn btn-danger px-4 btn-wishlist' : 'btn btn-outline-danger px-4 btn-wishlist');
+$wishIconOn = $wishIconOn ?? ($book['wishIconOn'] ?? 'images/wishlistIconRed-outlineWhite.png');
+$wishIconOff = $wishIconOff ?? ($book['wishIconOff'] ?? 'images/wishlistIconWhite.png');
+$cartIcon = $cartIcon ?? ($book['cartIcon'] ?? 'images/cartIcon.png');
+$wishlistAddUrl = $wishlistAddUrl ?? ($book['wishlistAddUrl'] ?? $link->url('Wishlist.add'));
+$wishlistRemoveUrl = $wishlistRemoveUrl ?? ($book['wishlistRemoveUrl'] ?? $link->url('Wishlist.remove'));
 ?>
 
-<div class="page-book-detail bg-light min-vh-100">
+<div class="page-book-detail bg-light min-vh-100"
+     data-wishlist-add-url="<?= htmlspecialchars($wishlistAddUrl, ENT_QUOTES, 'UTF-8') ?>"
+     data-wishlist-remove-url="<?= htmlspecialchars($wishlistRemoveUrl, ENT_QUOTES, 'UTF-8') ?>"
+     data-wish-icon-on="<?= htmlspecialchars($link->asset($wishIconOn), ENT_QUOTES, 'UTF-8') ?>"
+     data-wish-icon-off="<?= htmlspecialchars($link->asset($wishIconOff), ENT_QUOTES, 'UTF-8') ?>"
+     data-cart-icon="<?= htmlspecialchars($link->asset($cartIcon), ENT_QUOTES, 'UTF-8') ?>">
     <div class="container py-3">
         <a href="<?= $link->url('Books.index') ?>" class="text-decoration-none fs-5 text-muted mb-3 d-inline-flex align-items-center back-link">
             <span class="me-1">&larr;</span> Späť na knihy
@@ -43,7 +46,6 @@ $cartIcon = 'images/cartIcon.png';
                         <h1 class="fw-bold h2 mb-1"><?= htmlspecialchars($book['nazov'] ?? '', ENT_QUOTES, 'UTF-8') ?></h1>
 
                         <?php if (!empty($book['autor'])): ?>
-                            <?php $authorUrl = $link->url('Books.index', ['q' => $book['autor']]); ?>
                             <div class="text-muted fs-5">
                                 <a href="<?= htmlspecialchars($authorUrl, ENT_QUOTES, 'UTF-8') ?>" class="text-decoration-none text-muted">
                                     <?= htmlspecialchars($book['autor'], ENT_QUOTES, 'UTF-8') ?>
@@ -97,10 +99,7 @@ $cartIcon = 'images/cartIcon.png';
 
                         <div class="d-flex flex-wrap gap-2">
                             <?php
-                            $bookIdRaw = $book['id'] ?? $book['ISBN'] ?? $book['nazov'] ?? '';
-                            $bookId = htmlspecialchars($bookIdRaw, ENT_QUOTES, 'UTF-8');
-                            $isIn = filter_var($inWishlist ?? false, FILTER_VALIDATE_BOOLEAN);
-                            $btnClass = $isIn ? 'btn btn-danger px-4 btn-wishlist' : 'btn btn-outline-danger px-4 btn-wishlist';
+                            // $bookId already computed above
                             ?>
 
                             <?php if (!($isAdmin ?? false)) { ?>
@@ -108,7 +107,7 @@ $cartIcon = 'images/cartIcon.png';
                                     <input type="hidden" name="id" value="<?= $bookId ?>">
                                     <button type="submit" role="button" class="<?= $btnClass ?>" aria-label="Pridať do wishlistu" title="Pridať do wishlistu"
                                             data-book-id="<?= $bookId ?>" aria-pressed="<?= $isIn ? 'true' : 'false' ?>"
-                                            data-icon-on="<?= $link->asset($wishIconOn) ?>" data-icon-off="<?= $link->asset($wishIconOff) ?>">
+                                            data-icon-on="<?= htmlspecialchars($link->asset($wishIconOn), ENT_QUOTES, 'UTF-8') ?>" data-icon-off="<?= htmlspecialchars($link->asset($wishIconOff), ENT_QUOTES, 'UTF-8') ?>">
                                         <img src="<?= $link->asset($isIn ? $wishIconOn : $wishIconOff) ?>" alt="" class="icon2 w-16 wishlist-icon-white" aria-hidden="true">
                                         <span class="visually-hidden">Pridať do wishlistu</span>
                                     </button>
@@ -130,9 +129,3 @@ $cartIcon = 'images/cartIcon.png';
         </div>
     </div>
 </div>
-
-<script>
-    // Used by public/js/wishlist.js
-    window.WISHLIST_ADD_URL = <?= json_encode($link->url('Wishlist.add')) ?>;
-    window.WISHLIST_REMOVE_URL = <?= json_encode($link->url('Wishlist.remove')) ?>;
-</script>

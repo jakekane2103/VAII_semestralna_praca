@@ -7,7 +7,18 @@
   // DOM ready handler: initializes variables and event listeners.
   // Used: runs on DOMContentLoaded to wire up add-to-cart forms and modal.
   document.addEventListener('DOMContentLoaded', function() {
-    const cartUrl = window.BOOKS_CART_URL || null;
+    // Read configuration (URLs/assets) from the page root dataset as a fallback
+    // Support both listing and detail pages: .books-index (list) or .page-book-detail (detail)
+    var pageRoot = document.querySelector('.books-index') || document.querySelector('.page-book-detail');
+    const cartUrl = window.BOOKS_CART_URL || (pageRoot && pageRoot.dataset && pageRoot.dataset.booksCartUrl) || null;
+    // expose globals for other scripts that rely on them
+    if (!window.BOOKS_CART_URL && pageRoot && pageRoot.dataset && pageRoot.dataset.booksCartUrl) window.BOOKS_CART_URL = pageRoot.dataset.booksCartUrl;
+    if (!window.WISHLIST_ADD_URL && pageRoot && pageRoot.dataset && pageRoot.dataset.wishlistAddUrl) window.WISHLIST_ADD_URL = pageRoot.dataset.wishlistAddUrl;
+    if (!window.WISHLIST_REMOVE_URL && pageRoot && pageRoot.dataset && pageRoot.dataset.wishlistRemoveUrl) window.WISHLIST_REMOVE_URL = pageRoot.dataset.wishlistRemoveUrl;
+    if (!window.WISH_ICON_ON && pageRoot && pageRoot.dataset && pageRoot.dataset.wishIconOn) window.WISH_ICON_ON = pageRoot.dataset.wishIconOn;
+    if (!window.WISH_ICON_OFF && pageRoot && pageRoot.dataset && pageRoot.dataset.wishIconOff) window.WISH_ICON_OFF = pageRoot.dataset.wishIconOff;
+    if (!window.CART_ICON && pageRoot && pageRoot.dataset && pageRoot.dataset.cartIcon) window.CART_ICON = pageRoot.dataset.cartIcon;
+
     const forms = document.querySelectorAll('form.js-add-to-cart');
     const modalEl = document.getElementById('addToCartModal');
     if (!forms.length || !modalEl || !cartUrl) {
@@ -364,6 +375,29 @@
 // Lightweight protections for Books pages
 (function(){
   document.addEventListener('DOMContentLoaded', function () {
+    // Author-scroll fallback moved from the view: ensure the .authorFoundBooks is visible under sticky header
+    try {
+      var root = document.querySelector('.books-index') || document.querySelector('.page-book-detail');
+      var authorFilter = root && root.dataset ? (root.dataset.authorFilter || '') : '';
+      if (authorFilter && document.querySelector('.authorFoundBooks')) {
+        var el = document.querySelector('.authorFoundBooks');
+        // compute header height from CSS variable or measured .sticky-header
+        var headerHeight = 0;
+        var computed = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
+        if (computed) {
+          var parsed = parseInt(computed.trim());
+          if (!isNaN(parsed)) headerHeight = parsed;
+        }
+        if (!headerHeight) {
+          var header = document.querySelector('.sticky-header');
+          if (header) headerHeight = Math.ceil(header.getBoundingClientRect().height || 0);
+        }
+        var extra = 8;
+        var top = el.getBoundingClientRect().top + window.scrollY - headerHeight - extra;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'instant' in document.documentElement ? 'instant' : 'auto' });
+      }
+    } catch (e) { /* ignore */ }
+
     // Save original state of wishlist buttons so other scripts can't permanently overwrite them
     try {
       document.querySelectorAll('.btn-wishlist').forEach(function (btn) {

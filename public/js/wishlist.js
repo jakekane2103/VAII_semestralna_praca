@@ -397,10 +397,27 @@
 
         // Enable drag & drop on wishlist rows if present
         var wishlistGrid = document.getElementById('wishlist-grid');
-        var reorderUrl = window.WISHLIST_REORDER_URL || (document.body && document.body.dataset && document.body.dataset.wishlistReorderUrl) || '/wishlist/reorder';
-        if (wishlistGrid) {
-            enableDragToReorder(wishlistGrid, reorderUrl);
-            updateRanks(wishlistGrid);
+        // Prefer explicit data attribute on the grid, then global, then body dataset, then default
+        var reorderUrl = null;
+        try {
+            if (wishlistGrid && wishlistGrid.dataset && wishlistGrid.dataset.wishlistReorderUrl) {
+                reorderUrl = wishlistGrid.dataset.wishlistReorderUrl;
+                // expose global for other scripts if not set
+                if (!window.WISHLIST_REORDER_URL) window.WISHLIST_REORDER_URL = reorderUrl;
+            }
+        } catch (e) { /* ignore */ }
+        if (!reorderUrl) {
+            reorderUrl = window.WISHLIST_REORDER_URL || (document.body && document.body.dataset && document.body.dataset.wishlistReorderUrl) || '/wishlist/reorder';
         }
+         if (wishlistGrid) {
+             enableDragToReorder(wishlistGrid, reorderUrl);
+             updateRanks(wishlistGrid);
+         }
+
+        // Wire up remove/move form handlers
+        try {
+            var removeForms = document.querySelectorAll('#wishlist-grid form[action$="Wishlist.remove"]');
+            removeForms.forEach(function (f) { f.addEventListener('submit', function (e) { handleAction(e, f.action, function (id) { var row = document.querySelector('.wishlist-row[data-id="' + id + '"]'); if (row) row.parentNode.removeChild(row); }); }); });
+        } catch (e) { /* ignore */ }
     });
 })();
