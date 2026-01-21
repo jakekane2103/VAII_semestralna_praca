@@ -13,7 +13,6 @@ CREATE TABLE `kniha` (
 
 CREATE TABLE `zakaznik` (
                             `id_zakaznik` INT(11) NOT NULL AUTO_INCREMENT,
-                            `pouzivatelske_meno` VARCHAR(255) NOT NULL,
                             `meno` VARCHAR(255) NOT NULL,
                             `priezvisko` VARCHAR(255) NOT NULL,
                             `email` VARCHAR(255) NOT NULL,

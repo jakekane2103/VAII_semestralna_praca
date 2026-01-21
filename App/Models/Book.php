@@ -1,84 +1,144 @@
 <?php
+
 namespace App\Models;
 
-/**
- * Book model.
- *
- * Encapsulates all DB access for books.
- */
-class Book extends BaseModel
+use Framework\DB\Connection;
+
+class Book
 {
-    /**
-     * Fetch paginated books list (optionally filtered by a search query across title/author/series).
-     *
-     * @return array{books: array<int, array<string, mixed>>, page: int, totalPages: int, perPage: int, totalBooks: int}
-     */
-    public function getPaginatedList(?string $query, int $page = 1, int $perPage = 21): array
+    // Return all books with optional series name
+    public static function allWithSeries(): array
     {
-        $q = trim((string)($query ?? ''));
-        $page = max(1, $page);
-        $perPage = max(1, $perPage);
+        $conn = Connection::getInstance();
+        // Sort alphabetically by nazov !modify later so user may choose!
+        $stmt = $conn->prepare("SELECT b.id_kniha AS id, b.nazov, b.autor, b.cena, b.obrazok, b.series_id, s.name AS series_name, b.popis FROM kniha b LEFT JOIN serie s ON b.series_id = s.id ORDER BY b.nazov");
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
 
-        if ($q === '') {
-            $countStmt = $this->conn->prepare('SELECT COUNT(*) FROM kniha');
-            $countStmt->execute();
-            $totalBooks = (int)$countStmt->fetchColumn();
+    // Create a new book record. $data must include keys: nazov, autor, series_id, obrazok, popis, cena
+    public static function create(array $data): bool
+    {
+        $conn = Connection::getInstance();
+        $sql = "INSERT INTO kniha (nazov, autor, series_id, obrazok, popis, cena) VALUES (:nazov, :autor, :series_id, :obrazok, :popis, :cena)";
+        $stmt = $conn->prepare($sql);
+        return (bool)$stmt->execute([
+            ':nazov' => $data['nazov'] ?? null,
+            ':autor' => $data['autor'] ?? null,
+            ':series_id' => $data['series_id'] ?? null,
+            ':obrazok' => $data['obrazok'] ?? null,
+            ':popis' => $data['popis'] ?? null,
+            ':cena' => $data['cena'] ?? null,
+        ]);
+    }
 
-            $totalPages = (int)max(1, (int)ceil($totalBooks / $perPage));
-            if ($page > $totalPages) {
-                $page = $totalPages;
+    // Update book by id using provided fields (associative column => value). Returns affected rows (int) or false on error.
+    public static function update(int $id, array $fields)
+    {
+        if (empty($fields)) return 0;
+        $conn = Connection::getInstance();
+        $setParts = [];
+        $params = [':id' => $id];
+        foreach ($fields as $col => $val) {
+            // allow null to set NULL
+            if ($val === null) {
+                $setParts[] = "$col = NULL";
+            } else {
+                $setParts[] = "$col = :$col";
+                $params[":$col"] = $val;
             }
-            $offset = ($page - 1) * $perPage;
+        }
+        $sql = 'UPDATE kniha SET ' . implode(', ', $setParts) . ' WHERE id_kniha = :id';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
 
-            $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
-                    FROM kniha b
-                    LEFT JOIN serie s ON b.series_id = s.id
-                    ORDER BY b.nazov
-                    LIMIT :limit OFFSET :offset";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            $stmt->execute();
+    // Count how many order items reference this book
+    public static function countInOrders(int $id): int
+    {
+        $conn = Connection::getInstance();
+        $stmt = $conn->prepare('SELECT COUNT(*) AS cnt FROM polozkaObjednavky WHERE id_kniha = :id');
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return isset($row['cnt']) ? (int)$row['cnt'] : 0;
+    }
 
-            $books = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    // Delete book and cleanup cart/wishlist references in a transaction. Returns number of deleted book rows.
+    public static function deleteWithCleanup(int $id): int
+    {
+        $conn = Connection::getInstance();
+        $conn->beginTransaction();
+        try {
+            $d1 = $conn->prepare('DELETE FROM kosikKniha WHERE id_kniha = :id');
+            $d1->execute([':id' => $id]);
 
-            return [
-                'books' => $books,
-                'page' => $page,
-                'totalPages' => $totalPages,
-                'perPage' => $perPage,
-                'totalBooks' => $totalBooks,
-            ];
+            $d2 = $conn->prepare('DELETE FROM wishlistKniha WHERE id_kniha = :id');
+            $d2->execute([':id' => $id]);
+
+            $d3 = $conn->prepare('DELETE FROM kniha WHERE id_kniha = :id');
+            $d3->execute([':id' => $id]);
+            $affected = $d3->rowCount();
+
+            $conn->commit();
+            return (int)$affected;
+        } catch (\Exception $e) {
+            try { $conn->rollBack(); } catch (\Exception $_) {}
+            throw $e;
+        }
+    }
+
+    // Instance methods expected by controllers (old code used instance model)
+    public function getPaginatedList(?string $q, int $page, int $perPage, bool $authorOnly = false): array
+    {
+        $conn = Connection::getInstance();
+
+        $params = [];
+        $where = '';
+        if ($q !== null && $q !== '') {
+            $params[':q'] = '%' . $q . '%';
+            if ($authorOnly) {
+                // When explicitly searching by author only
+                $where = 'WHERE b.autor LIKE :q';
+            } else {
+                // Search across title, author and series name
+                $where = 'WHERE (b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q)';
+            }
         }
 
-        $like = '%' . $q . '%';
+        // Count total matching rows
+        $countSql = "SELECT COUNT(*) AS cnt FROM kniha b LEFT JOIN serie s ON b.series_id = s.id " . $where;
+        $cstmt = $conn->prepare($countSql);
+        $cstmt->execute($params);
+        $crow = $cstmt->fetch(\PDO::FETCH_ASSOC);
+        $totalBooks = isset($crow['cnt']) ? (int)$crow['cnt'] : 0;
 
-        $countSql = "SELECT COUNT(*)
-                     FROM kniha b
-                     LEFT JOIN serie s ON b.series_id = s.id
-                     WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q";
-        $countStmt = $this->conn->prepare($countSql);
-        $countStmt->execute([':q' => $like]);
-        $totalBooks = (int)$countStmt->fetchColumn();
-
-        $totalPages = (int)max(1, (int)ceil($totalBooks / $perPage));
-        if ($page > $totalPages) {
-            $page = $totalPages;
-        }
+        $perPage = max(1, (int)$perPage);
+        $page = max(1, (int)$page);
+        $totalPages = (int)max(1, ceil($totalBooks / $perPage));
         $offset = ($page - 1) * $perPage;
 
-        $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
+        $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.cena, b.obrazok, b.series_id, s.name AS series_name, b.popis
                 FROM kniha b
                 LEFT JOIN serie s ON b.series_id = s.id
-                WHERE b.nazov LIKE :q OR b.autor LIKE :q OR s.name LIKE :q
+                " . $where . "
+                -- Order alphabetically by title
                 ORDER BY b.nazov
                 LIMIT :limit OFFSET :offset";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindValue(':q', $like, \PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-        $stmt->execute();
 
+        // Add limit/offset as params (use ints)
+        $params[':limit'] = $perPage;
+        $params[':offset'] = $offset;
+
+        $stmt = $conn->prepare($sql);
+        // Bind parameters explicitly for robustness (especially limit/offset as integers)
+        if (isset($params[':q'])) {
+            $stmt->bindValue(':q', $params[':q'], \PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', (int)$params[':limit'], \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$params[':offset'], \PDO::PARAM_INT);
+
+        $stmt->execute();
         $books = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
         return [
@@ -90,87 +150,102 @@ class Book extends BaseModel
         ];
     }
 
-    /**
-     * Load a single book including series name.
-     */
+    public function getAllSeries(): array
+    {
+        // Delegate to Series model
+        return Series::allWithCounts();
+    }
+
     public function getDetailById(int $id): ?array
     {
-        $stmt = $this->conn->prepare('SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name, b.ISBN FROM kniha b LEFT JOIN serie s ON b.series_id = s.id WHERE b.id_kniha = :id');
+        $conn = Connection::getInstance();
+        $stmt = $conn->prepare('SELECT b.id_kniha AS id, b.nazov, b.autor, b.cena, b.obrazok, b.series_id, s.name AS series_name, b.popis FROM kniha b LEFT JOIN serie s ON b.series_id = s.id WHERE b.id_kniha = :id LIMIT 1');
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
-    /**
-     * Fetch list of series used by admin forms.
-     */
-    public function getAllSeries(): array
-    {
-        $stmt = $this->conn->prepare('SELECT id, name FROM serie ORDER BY name');
-        $stmt->execute();
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
-    }
+    // ------------------------------------------------------------------
+    // Compatibility helpers expected by older controllers/models
+    // ------------------------------------------------------------------
 
     /**
-     * Resolve an arbitrary identifier used in forms/sessions to a numeric DB id_kniha.
+     * Resolve a book identifier which may be numeric id, ISBN or title into a numeric id.
+     * Returns null if no matching book is found.
      *
-     * In this project some places store book id as numeric id_kniha, but in a few UI flows it can be ISBN or title.
-     *
-     * @return int|null Numeric id_kniha when resolved, otherwise null.
+     * @param mixed $idOrIsbnOrTitle
+     * @return int|null
      */
     public function resolveId(mixed $idOrIsbnOrTitle): ?int
     {
-        if ($idOrIsbnOrTitle === null) {
+        $conn = Connection::getInstance();
+
+        if ($idOrIsbnOrTitle === null) return null;
+
+        // If it's an integer or purely digits, treat as id
+        if (is_int($idOrIsbnOrTitle) || (is_string($idOrIsbnOrTitle) && ctype_digit($idOrIsbnOrTitle))) {
+            $id = (int)$idOrIsbnOrTitle;
+            $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE id_kniha = :id LIMIT 1');
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row && isset($row['id_kniha'])) return (int)$row['id_kniha'];
             return null;
         }
 
-        $v = trim((string)$idOrIsbnOrTitle);
-        if ($v === '') {
-            return null;
+        $value = (string)$idOrIsbnOrTitle;
+
+        // Try exact ISBN match if column exists
+        try {
+            $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE isbn = :v LIMIT 1');
+            $stmt->execute([':v' => $value]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row && isset($row['id_kniha'])) return (int)$row['id_kniha'];
+        } catch (\Throwable $e) {
+            // ignore if column doesn't exist
         }
 
-        if (ctype_digit($v)) {
-            return (int)$v;
-        }
+        // Fallback: try matching by exact title first, then LIKE
+        $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE nazov = :v LIMIT 1');
+        $stmt->execute([':v' => $value]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($row && isset($row['id_kniha'])) return (int)$row['id_kniha'];
 
-        // Try ISBN
-        $row = $this->fetchOne('SELECT id_kniha FROM kniha WHERE ISBN = :v LIMIT 1', [':v' => $v]);
-        if ($row && isset($row['id_kniha'])) {
-            return (int)$row['id_kniha'];
-        }
-
-        // Finally fallback to title match (exact)
-        $row = $this->fetchOne('SELECT id_kniha FROM kniha WHERE nazov = :v LIMIT 1', [':v' => $v]);
-        if ($row && isset($row['id_kniha'])) {
-            return (int)$row['id_kniha'];
-        }
+        $stmt = $conn->prepare('SELECT id_kniha FROM kniha WHERE nazov LIKE :v LIMIT 1');
+        $stmt->execute([':v' => '%' . $value . '%']);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($row && isset($row['id_kniha'])) return (int)$row['id_kniha'];
 
         return null;
     }
 
     /**
-     * Fetch multiple books by their numeric ids.
+     * Fetch multiple books by numeric ids. Returns array of associative rows with `id` key.
      *
-     * @param array<int,int> $ids
+     * @param array<int> $ids
      * @return array<int, array<string,mixed>>
      */
     public function getByIds(array $ids): array
     {
-        $ids = array_values(array_unique(array_map('intval', $ids)));
-        $ids = array_values(array_filter($ids, static fn($x) => $x > 0));
-        if (empty($ids)) {
-            return [];
+        $ids = array_values(array_unique(array_filter($ids, static fn($v) => ctype_digit((string)$v) || is_int($v))));
+        if (empty($ids)) return [];
+
+        $conn = Connection::getInstance();
+
+        // Build placeholders
+        $placeholders = [];
+        $params = [];
+        foreach ($ids as $i => $val) {
+            $ph = ':id' . $i;
+            $placeholders[] = $ph;
+            $params[$ph] = (int)$val;
         }
 
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT b.id_kniha AS id, b.nazov, b.autor, b.obrazok, b.popis, b.cena, b.series_id, s.name AS series_name
-                FROM kniha b
-                LEFT JOIN serie s ON b.series_id = s.id
-                WHERE b.id_kniha IN ($placeholders)";
+        $sql = 'SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena FROM kniha WHERE id_kniha IN (' . implode(',', $placeholders) . ')';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($ids);
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        return $rows;
     }
-}
 
+}

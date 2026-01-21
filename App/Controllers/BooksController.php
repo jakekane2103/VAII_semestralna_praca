@@ -56,7 +56,9 @@ class BooksController extends BaseController
         $perPage = 21;
 
         $bookModel = new Book();
-        $result = $bookModel->getPaginatedList($q !== '' ? $q : null, $page, $perPage);
+        // If the `author` flag is present (user clicked an author link), restrict search to authors only.
+        $authorOnly = ($authorFlag !== null);
+        $result = $bookModel->getPaginatedList($q !== '' ? $q : null, $page, $perPage, $authorOnly);
 
         // Get wishlist IDs from session so the view can mark hearts as filled
         $session = $this->app->getSession();

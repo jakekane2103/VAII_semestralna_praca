@@ -78,6 +78,34 @@ class Wishlist extends BaseModel
     }
 
     /**
+     * Reconcile a provided new order (array of ids) against the current wishlist.
+     * Keeps only ids that exist in current, preserves their order from $newOrder,
+     * and appends any remaining items from current at the end.
+     *
+     * @param array<int|string> $current Current wishlist ids (as stored in session)
+     * @param array<int|string> $newOrder Proposed order (from client)
+     * @return array<string> Final ordered list of ids as strings
+     */
+    public function reconcileSessionOrder(array $current, array $newOrder): array
+    {
+        $currentMap = array_flip(array_map('strval', $current));
+
+        $filtered = [];
+        foreach ($newOrder as $id) {
+            $idStr = (string)$id;
+            if (isset($currentMap[$idStr])) {
+                $filtered[] = $idStr;
+            }
+        }
+
+        $remaining = array_values(array_filter($current, function ($v) use ($filtered) {
+            return !in_array((string)$v, $filtered, true);
+        }));
+
+        return array_merge($filtered, $remaining);
+    }
+
+    /**
      * Persist a wishlist add to DB for logged-in user.
      */
     public function addToDb(int $userId, int $bookId): void
@@ -156,4 +184,3 @@ class Wishlist extends BaseModel
         return $this->fetchOne('SELECT id_kniha AS id, nazov, autor, obrazok, popis, cena FROM kniha WHERE id_kniha = :id LIMIT 1', [':id' => $bookId]);
     }
 }
-

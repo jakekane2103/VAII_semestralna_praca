@@ -38,16 +38,8 @@ class Cart extends BaseModel
             return [];
         }
 
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT id_kniha AS id, nazov, autor, obrazok, cena FROM kniha WHERE id_kniha IN ($placeholders)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute($ids);
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
-
-        $byId = [];
-        foreach ($rows as $r) {
-            $byId[(string)$r['id']] = $r;
-        }
+        // Reuse helper to fetch book rows by ids
+        $byId = $this->fetchBooksByIds($ids);
 
         // preserve input order
         $items = [];
@@ -59,8 +51,8 @@ class Cart extends BaseModel
 
             $row = $byId[$k];
             $row['mnozstvo'] = (int)($sessionCart[$k] ?? $sessionCart[(int)$k] ?? 1);
-            $row['id_kniha'] = (int)$row['id'];
-            unset($row['id']);
+            // ensure key name used in views is `id_kniha` (int)
+            $row['id_kniha'] = (int)$row['id_kniha'];
             $items[] = $row;
         }
 
@@ -100,14 +92,12 @@ class Cart extends BaseModel
             return 0.0;
         }
 
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $this->conn->prepare("SELECT id_kniha, cena FROM kniha WHERE id_kniha IN ($placeholders)");
-        $stmt->execute($ids);
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        // Reuse helper to fetch book rows by ids
+        $rowsMap = $this->fetchBooksByIds($ids);
 
         $priceMap = [];
-        foreach ($rows as $r) {
-            $priceMap[(string)$r['id_kniha']] = (float)$r['cena'];
+        foreach ($rowsMap as $id => $r) {
+            $priceMap[(string)$id] = (float)($r['cena'] ?? 0.0);
         }
 
         $total = 0.0;
@@ -116,6 +106,34 @@ class Cart extends BaseModel
         }
 
         return $total;
+    }
+
+    /**
+     * Helper: fetch books by numeric ids and return map id => row
+     * Kept private to encapsulate DB access used by cart methods.
+     *
+     * @param array<int|string> $ids
+     * @return array<string,array<string,mixed>> keyed by id_kniha as string
+     */
+    private function fetchBooksByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn($v) => ctype_digit((string)$v) || is_int($v))));
+        if (empty($ids)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT id_kniha, nazov, autor, obrazok, cena FROM kniha WHERE id_kniha IN ($placeholders)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($ids);
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+        $map = [];
+        foreach ($rows as $r) {
+            $map[(string)$r['id_kniha']] = $r;
+        }
+
+        return $map;
     }
 
     /**

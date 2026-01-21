@@ -150,7 +150,7 @@ class User implements IIdentity
      * Create a new customer record in `zakaznik`.
      *
      * Expected keys in $data: meno, priezvisko, email, passwordHash.
-     * Uses email as username (pouzivatelske_meno) to match current controller behavior.
+     * Uses email as username where necessary
      */
     public static function createCustomer(array $data): bool
     {
@@ -160,13 +160,103 @@ class User implements IIdentity
         $passwordHash = (string)($data['passwordHash'] ?? '');
 
         $conn = Connection::getInstance();
-        $stmt = $conn->prepare('INSERT INTO zakaznik (pouzivatelske_meno, meno, priezvisko, email, heslo, datum_registracie) VALUES (:uname, :meno, :priezvisko, :email, :heslo, NOW())');
+        $stmt = $conn->prepare('INSERT INTO zakaznik (meno, priezvisko, email, heslo, datum_registracie) VALUES (:meno, :priezvisko, :email, :heslo, NOW())');
         return $stmt->execute([
-            ':uname' => $email,
             ':meno' => $meno,
             ':priezvisko' => $priezvisko,
             ':email' => $email,
             ':heslo' => $passwordHash
         ]);
+    }
+
+    // Helper: fetch full profile row used by account edit view.
+    public static function getProfile(int $id): ?array
+    {
+        try {
+            $conn = Connection::getInstance();
+            $stmt = $conn->prepare('SELECT id_zakaznik, meno, priezvisko, email, krajina, mesto, psc, ulica, cislo, datum_registracie FROM zakaznik WHERE id_zakaznik = :id LIMIT 1');
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    // Check whether an email is taken by another user. If $excludeId is provided, exclude that user.
+    public static function isEmailTaken(string $email, ?int $excludeId = null): bool
+    {
+        $email = self::normalizeEmail($email);
+        $conn = Connection::getInstance();
+        if ($excludeId === null) {
+            $stmt = $conn->prepare('SELECT 1 FROM zakaznik WHERE email = :email LIMIT 1');
+            $stmt->execute([':email' => $email]);
+        } else {
+            $stmt = $conn->prepare('SELECT 1 FROM zakaznik WHERE email = :email AND id_zakaznik != :id LIMIT 1');
+            $stmt->execute([':email' => $email, ':id' => $excludeId]);
+        }
+        return (bool)$stmt->fetchColumn();
+    }
+
+    // Validate profile input; return null when valid or an error message string when invalid.
+    public static function validateProfile(array $data, bool $passwordRequired = false): ?string
+    {
+        $meno = trim((string)($data['meno'] ?? ''));
+        $priez = trim((string)($data['priezvisko'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+
+        if ($meno === '' || $priez === '' || $email === '') {
+            return 'Vyplňte povinné polia.';
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return 'Neplatný formát e-mailu.';
+        }
+
+        $password = (string)($data['heslo'] ?? '');
+        $passwordConfirm = (string)($data['heslo_confirm'] ?? '');
+
+        if ($passwordRequired || $password !== '') {
+            if ($password !== $passwordConfirm) {
+                return 'Heslá sa nezhodujú.';
+            }
+            if (strlen($password) < 6) {
+                return 'Heslo musí mať aspoň 6 znakov.';
+            }
+        }
+
+        return null;
+    }
+
+    // Update profile record. $data may contain keys: meno, priezvisko, email, krajina, mesto, psc, ulica, cislo, heslo
+    public static function updateProfile(int $id, array $data): bool
+    {
+        $conn = Connection::getInstance();
+
+        $fields = [
+            'meno' => $data['meno'] ?? null,
+            'priezvisko' => $data['priezvisko'] ?? null,
+            'email' => $data['email'] ?? null,
+            'krajina' => $data['krajina'] ?? null,
+            'mesto' => $data['mesto'] ?? null,
+            'psc' => $data['psc'] ?? null,
+            'ulica' => $data['ulica'] ?? null,
+            'cislo' => $data['cislo'] ?? null,
+        ];
+
+        if (!empty($data['heslo'])) {
+            $fields['heslo'] = password_hash((string)$data['heslo'], PASSWORD_DEFAULT);
+        }
+
+        $setParts = [];
+        $params = [':id' => $id];
+        foreach ($fields as $col => $val) {
+            $setParts[] = "$col = :$col";
+            $params[":$col"] = $val;
+        }
+
+        $sql = 'UPDATE zakaznik SET ' . implode(', ', $setParts) . ' WHERE id_zakaznik = :id';
+        $stmt = $conn->prepare($sql);
+        return (bool)$stmt->execute($params);
     }
 }

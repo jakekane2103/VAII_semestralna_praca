@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use Framework\Core\BaseController;
-use Framework\DB\Connection;
 use Framework\Http\Request;
 use Framework\Http\Responses\Response;
 use App\Models\User;
@@ -32,10 +31,8 @@ class AccountController extends BaseController
         $data = [];
 
         if ($user && $user->getId() !== null) {
-            $conn = Connection::getInstance();
-            $stmt = $conn->prepare('SELECT id_zakaznik, pouzivatelske_meno, meno, priezvisko, email, krajina, mesto, psc, ulica, cislo, datum_registracie FROM zakaznik WHERE id_zakaznik = :id LIMIT 1');
-            $stmt->execute([':id' => $user->getId()]);
-            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            // Use model helper to fetch profile
+            $row = User::getProfile($user->getId());
             if ($row) {
                 $data = $row;
             }
@@ -67,78 +64,34 @@ class AccountController extends BaseController
         }
 
         $uid = $user->getId();
-        $pouz = trim((string)$request->value('pouzivatelske_meno'));
-        $meno = trim((string)$request->value('meno'));
-        $priez = trim((string)$request->value('priezvisko'));
-        $email = trim((string)$request->value('email'));
-        $krajina = trim((string)$request->value('krajina')) ?: null;
-        $mesto = trim((string)$request->value('mesto')) ?: null;
-        $psc = trim((string)$request->value('psc')) ?: null;
-        $ulica = trim((string)$request->value('ulica')) ?: null;
-        $cislo = trim((string)$request->value('cislo')) ?: null;
-        $password = (string)$request->value('heslo');
-        $passwordConfirm = (string)$request->value('heslo_confirm');
+        $data = [
+            'meno' => trim((string)$request->value('meno')),
+            'priezvisko' => trim((string)$request->value('priezvisko')),
+            'email' => trim((string)$request->value('email')),
+            'krajina' => trim((string)$request->value('krajina')) ?: null,
+            'mesto' => trim((string)$request->value('mesto')) ?: null,
+            'psc' => trim((string)$request->value('psc')) ?: null,
+            'ulica' => trim((string)$request->value('ulica')) ?: null,
+            'cislo' => trim((string)$request->value('cislo')) ?: null,
+            'heslo' => (string)$request->value('heslo'),
+            'heslo_confirm' => (string)$request->value('heslo_confirm'),
+        ];
 
-        // Basic validation
-        if ($pouz === '' || $meno === '' || $priez === '' || $email === '') {
-            $this->app->getSession()->set('account_error', 'Vyplňte povinné polia.');
+        // Delegate validation to model
+        $error = User::validateProfile($data, false);
+        if ($error !== null) {
+            $this->app->getSession()->set('account_error', $error);
             return $this->redirect($this->url('Account.index'));
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->app->getSession()->set('account_error', 'Neplatný formát e-mailu.');
-            return $this->redirect($this->url('Account.index'));
-        }
-
-        $conn = Connection::getInstance();
-        // Check email uniqueness (exclude current user)
-        $check = $conn->prepare('SELECT id_zakaznik FROM zakaznik WHERE email = :email AND id_zakaznik != :id LIMIT 1');
-        $check->execute([':email' => $email, ':id' => $uid]);
-        if ($check->fetch(\PDO::FETCH_ASSOC)) {
+        // Email uniqueness check via model
+        if (User::isEmailTaken($data['email'], $uid)) {
             $this->app->getSession()->set('account_error', 'E-mail je už použitý iným účtom.');
             return $this->redirect($this->url('Account.index'));
         }
 
-        // If password provided, validate
-        $passwordHash = null;
-        if ($password !== '') {
-            if ($password !== $passwordConfirm) {
-                $this->app->getSession()->set('account_error', 'Heslá sa nezhodujú.');
-                return $this->redirect($this->url('Account.index'));
-            }
-            if (strlen($password) < 6) {
-                $this->app->getSession()->set('account_error', 'Heslo musí mať aspoň 6 znakov.');
-                return $this->redirect($this->url('Account.index'));
-            }
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-        }
-
         try {
-            // Build update SQL with only allowed columns
-            $fields = [
-                'pouzivatelske_meno' => $pouz,
-                'meno' => $meno,
-                'priezvisko' => $priez,
-                'email' => $email,
-                'krajina' => $krajina,
-                'mesto' => $mesto,
-                'psc' => $psc,
-                'ulica' => $ulica,
-                'cislo' => $cislo
-            ];
-            if ($passwordHash !== null) {
-                $fields['heslo'] = $passwordHash;
-            }
-
-            $setParts = [];
-            $params = [':id' => $uid];
-            foreach ($fields as $col => $val) {
-                $setParts[] = "$col = :$col";
-                $params[":$col"] = $val;
-            }
-            $sql = 'UPDATE zakaznik SET ' . implode(', ', $setParts) . ' WHERE id_zakaznik = :id';
-            $stmt = $conn->prepare($sql);
-            $ok = $stmt->execute($params);
+            $ok = User::updateProfile($uid, $data);
 
             if ($ok) {
                 $this->app->getSession()->set('account_success', 'Údaje boli úspešne uložené.');
@@ -149,13 +102,14 @@ class AccountController extends BaseController
                     if ($auth) {
                         $identity = $auth->getUser();
                         if ($identity instanceof User) {
-                            // Update name and username/email on the identity object
-                            // Keep compatibility with existing behavior (name was previously first name)
-                            $identity->setName($meno);
-                            $identity->setUsername($email);
-
-                            // Persist updated identity into session so getUser() and future requests reflect changes
-                            $this->app->getSession()->set('user', $identity);
+                            // Reload identity from DB to pick up changes
+                            $fresh = User::findById($uid);
+                            if ($fresh !== null) {
+                                $identity->setName($fresh->getName());
+                                $identity->setUsername($fresh->getUsername());
+                                // Persist updated identity into session so getUser() and future requests reflect changes
+                                $this->app->getSession()->set('user', $identity);
+                            }
                         }
                     }
                 } catch (\Throwable $e) {

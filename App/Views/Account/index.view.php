@@ -26,10 +26,7 @@ $error = $error ?? null;
         <form action="<?= $link->url('Account.update') ?>" method="post" class="account-form">
             <input type="hidden" name="id_zakaznik" value="<?= htmlspecialchars($data['id_zakaznik'] ?? '') ?>">
 
-            <div class="mb-3">
-                <label class="form-label">Používateľské meno</label>
-                <input type="text" name="pouzivatelske_meno" class="form-control" required value="<?= htmlspecialchars($data['pouzivatelske_meno'] ?? '') ?>">
-            </div>
+            <!-- username handled as email -->
 
             <div class="row">
                 <div class="col-md-6 mb-3">

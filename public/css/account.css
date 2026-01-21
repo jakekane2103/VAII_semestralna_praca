@@ -12,7 +12,7 @@
 /* Slight spacing for success/error messages */
 .account-form .alert { margin-top: 8px; }
 
-@media (max-width: 767.98px) {
+@media (max-width: 760px) {
     .account-form {
         padding: 1rem;
         margin-left: 0.5rem;

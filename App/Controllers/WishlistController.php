@@ -202,21 +202,10 @@ class WishlistController extends BaseController
         }
 
         $current = $session->get('wishlist', []);
-        $currentMap = array_flip(array_map('strval', $current));
+        $wishlistModel = new Wishlist();
 
-        $filtered = [];
-        foreach ($newOrder as $id) {
-            $idStr = (string)$id;
-            if (isset($currentMap[$idStr])) {
-                $filtered[] = $idStr;
-            }
-        }
-
-        $remaining = array_values(array_filter($current, function ($v) use ($filtered) {
-            return !in_array((string)$v, $filtered, true);
-        }));
-
-        $final = array_merge($filtered, $remaining);
+        // Delegate reconciliation (filter + append remaining) to the model helper
+        $final = $wishlistModel->reconcileSessionOrder($current, $newOrder);
         $session->set('wishlist', $final);
 
         // If logged in, try to persist positions
@@ -224,7 +213,6 @@ class WishlistController extends BaseController
         if ($auth && $auth->isLogged()) {
             $user = $auth->getUser();
             if ($user && $user->getId() !== null) {
-                $wishlistModel = new Wishlist();
                 $wishlistModel->tryUpdatePositions((int)$user->getId(), $final);
             }
         }
