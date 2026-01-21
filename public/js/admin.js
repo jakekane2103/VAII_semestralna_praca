@@ -169,7 +169,7 @@
             });
         });
 
-        // --- Add modal wiring ---
+        // --- Add book modal ---
         var addBookModalEl = qs('#adminAddModal');
         var addBookModal = addBookModalEl ? new bootstrap.Modal(addBookModalEl, { focus: false }) : null;
         var addBookBtn = qs('#admin-open-add-book');

@@ -5,7 +5,6 @@
 
     if (!window.fetch) return;
 
-    // Lightweight JSON POST fallback (use existing global if provided)
     const postJson = window.postJson || function (url, obj) {
         return fetch(url, {
             method: 'POST',
@@ -33,7 +32,7 @@
         });
     };
 
-    // transient toast helper
+    // popup pridané/odstránené
     function showTransientToast(message, timeout = 1800) {
         let container = document.getElementById('__wv_toast_container__');
         if (!container) {

@@ -103,10 +103,12 @@ class AccountController extends BaseController
                         $identity = $auth->getUser();
                         if ($identity instanceof User) {
                             // Reload identity from DB to pick up changes
-                            $fresh = User::findById($uid);
-                            if ($fresh !== null) {
-                                $identity->setName($fresh->getName());
-                                $identity->setUsername($fresh->getUsername());
+                            // Use the profile row so we can control which piece of the name is used
+                            $profile = User::getProfile($uid);
+                            if ($profile !== null) {
+                                // Keep identity name as first name only (meno). If you prefer full name, use: $profile['meno'] . ' ' . $profile['priezvisko']
+                                $identity->setName(trim((string)($profile['meno'] ?? '')));
+                                $identity->setUsername((string)($profile['email'] ?? ''));
                                 // Persist updated identity into session so getUser() and future requests reflect changes
                                 $this->app->getSession()->set('user', $identity);
                             }

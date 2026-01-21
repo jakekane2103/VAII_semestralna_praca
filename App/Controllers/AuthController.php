@@ -46,7 +46,6 @@ class AuthController extends BaseController
             // ignore and fall back to native session
         }
 
-        // Native PHP session fallback
         try {
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 @session_start();
