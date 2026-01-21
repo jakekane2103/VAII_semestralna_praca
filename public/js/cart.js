@@ -6,7 +6,11 @@
 // --------------------
 (function(){
   document.addEventListener('DOMContentLoaded', function() {
-    const cartUrl = window.BOOKS_CART_URL || null;
+    // Prefer explicit global, but fall back to data attributes on the page root so
+    // this module works regardless of script load order.
+    var pageRoot = document.querySelector('.books-index') || document.querySelector('.page-book-detail');
+    const cartUrl = window.BOOKS_CART_URL || (pageRoot && pageRoot.dataset && pageRoot.dataset.booksCartUrl) || null;
+    try { console.debug('cart.js init:', { cartUrl: cartUrl, formsCount: document.querySelectorAll('form.js-add-to-cart').length, modalPresent: !!document.getElementById('addToCartModal') }); } catch (e) {}
     const forms = document.querySelectorAll('form.js-add-to-cart');
     const modalEl = document.getElementById('addToCartModal');
     if (!forms.length || !modalEl || !cartUrl) {
