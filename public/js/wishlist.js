@@ -1,301 +1,275 @@
 // File: public/js/wishlist.js
-// Purpose: Provide client-side wishlist interactions: add/remove via AJAX, optimistic UI for hearts,
-// drag & drop reordering, and sending new order to the server.
-// All functions below are used by event handlers in this file.
 (function () {
-    // Avoid double-init if this script was already loaded or if cart.js included the same module
     if (window.__wishlist_loaded) return;
     window.__wishlist_loaded = true;
 
-    // Defensive guard: if fetch is unavailable, bail out (older browsers)
-    // Used: run immediately to avoid errors when fetch not present.
     if (!window.fetch) return;
 
-    // postForm
-    // Purpose: Send multipart/form-data POST (FormData) and return parsed JSON or a success object.
-    // Input: url string, fd FormData
-    // Output: Promise resolving to JSON object or { success: true }
-    // Used: by handleAction and handleHeartClick to perform form-like POSTs.
-    function postForm(url, fd) {
+    // Lightweight JSON POST fallback (use existing global if provided)
+    const postJson = window.postJson || function (url, obj) {
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(obj)
+        }).then(r => {
+            if (!r.ok) throw new Error('Network response was not ok');
+            return r.json().catch(() => ({ success: true }));
+        });
+    };
+
+    const postForm = function (url, fd) {
         return fetch(url, {
             method: 'POST',
             body: fd,
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-            .then(function (r) {
-                if (!r.ok) throw new Error('Network response was not ok');
-                return r.json().catch(function () { return { success: true }; });
+        }).then(r => {
+            if (!r.ok) throw new Error('Network response was not ok');
+            return r.json().catch(() => ({ success: true }));
+        });
+    };
+
+    // transient toast helper
+    function showTransientToast(message, timeout = 1800) {
+        let container = document.getElementById('__wv_toast_container__');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = '__wv_toast_container__';
+            Object.assign(container.style, {
+                position: 'fixed',
+                right: '12px',
+                bottom: '12px',
+                zIndex: '1060',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
             });
-    }
+            document.body.appendChild(container);
+        }
 
-    // small transient toast helper: creates a non-obscuring popup in the bottom-right corner
-    function showTransientToast(message, timeout) {
-        timeout = typeof timeout === 'number' ? timeout : 1800;
-        try {
-            var containerId = '__wv_toast_container__';
-            var container = document.getElementById(containerId);
-            if (!container) {
-                container = document.createElement('div');
-                container.id = containerId;
-                container.style.position = 'fixed';
-                container.style.right = '12px';
-                container.style.bottom = '12px';
-                container.style.zIndex = 1060; // above most elements but below modals
-                container.style.display = 'flex';
-                container.style.flexDirection = 'column';
-                container.style.gap = '8px';
-                document.body.appendChild(container);
-            }
+        const toast = document.createElement('div');
+        toast.className = 'wv-toast';
+        Object.assign(toast.style, {
+            background: 'rgba(0,0,0,0.75)',
+            color: '#fff',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            opacity: '0',
+            transform: 'translateY(6px)',
+            transition: 'opacity 220ms ease, transform 220ms ease'
+        });
+        toast.textContent = message;
+        container.appendChild(toast);
+        // force reflow
+        void toast.offsetWidth;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
 
-            var toast = document.createElement('div');
-            toast.className = 'wv-toast';
-            toast.style.background = 'rgba(0,0,0,0.75)';
-            toast.style.color = '#fff';
-            toast.style.padding = '8px 12px';
-            toast.style.borderRadius = '6px';
-            toast.style.fontSize = '13px';
-            toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+        setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateY(6px)';
-            toast.style.transition = 'opacity 220ms ease, transform 220ms ease';
-            toast.textContent = message;
+            setTimeout(() => { try { container.removeChild(toast); } catch (e) {} }, 260);
+        }, timeout);
+    }
 
-            container.appendChild(toast);
-            // force reflow then show
-            void toast.offsetWidth;
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateY(0)';
-
-            setTimeout(function () {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(6px)';
-                setTimeout(function () { try { container.removeChild(toast); } catch (e) {} }, 260);
-            }, timeout);
-        } catch (e) {
-            try { console.log(message); } catch (e2) {}
+    // Resolve URLs with fallbacks
+    function resolveUrl(name, gridEl) {
+        switch (name) {
+            case 'add':
+                return window.WISHLIST_ADD_URL || (document.body && document.body.dataset && document.body.dataset.wishlistAddUrl) || '/wishlist/add';
+            case 'remove':
+                return window.WISHLIST_REMOVE_URL || (document.body && document.body.dataset && document.body.dataset.wishlistRemoveUrl) || '/wishlist/remove';
+            case 'reorder':
+                if (gridEl && gridEl.dataset && gridEl.dataset.wishlistReorderUrl) {
+                    if (!window.WISHLIST_REORDER_URL) window.WISHLIST_REORDER_URL = gridEl.dataset.wishlistReorderUrl;
+                    return gridEl.dataset.wishlistReorderUrl;
+                }
+                return window.WISHLIST_REORDER_URL || (document.body && document.body.dataset && document.body.dataset.wishlistReorderUrl) || '/wishlist/reorder';
+            default:
+                return '';
         }
     }
 
-    // postJson
-    // Purpose: Send JSON POST to server and parse JSON response.
-    // Input: url string, obj - object to send
-    // Output: Promise resolving to parsed JSON
-    // Used: by sendOrderToServer to post reorder payload.
-    function postJson(url, obj) {
-        return fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify(obj)
-        }).then(function (r) {
-            if (!r.ok) throw new Error('Network response was not ok');
-            return r.json().catch(function () { return { success: true }; });
-        });
-    }
+    // Toggle heart button optimistically and persist
+    function handleHeartClick(e) {
+        const btn = e.target && e.target.closest ? e.target.closest('.btn-wishlist') : null;
+        if (!btn) return;
 
-    // handleAction
-    // Purpose: Generic handler for forms on the wishlist grid (move/remove actions).
-    // - Prevents default, builds FormData, posts via postForm and on success calls onSuccess callback.
-    // Input: event, url string, onSuccess callback(id, data)
-    // Used: attached to remove/move forms inside DOMContentLoaded block below.
-    function handleAction(e, url, onSuccess) {
-        e.preventDefault();
-        var form = e.currentTarget;
-        var idInput = form.querySelector('input[name="id"]');
-        var id = idInput ? idInput.value : null;
-        var fd = new FormData(form);
+        // prevent duplicate activations
+        if (btn.getAttribute('data-wv-inflight') === '1') return;
+        btn.setAttribute('data-wv-inflight', '1');
+
+        const last = parseInt(btn.getAttribute('data-wv-last') || '0', 10) || 0;
+        const now = Date.now();
+        if (now - last < 700) {
+            btn.removeAttribute('data-wv-inflight');
+            return;
+        }
+        btn.setAttribute('data-wv-last', String(now));
+
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        try { if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); } catch (x) {}
+        try { if (typeof e.stopPropagation === 'function') e.stopPropagation(); } catch (x) {}
+
+        const bookId = btn.getAttribute('data-book-id');
+        if (!bookId) {
+            btn.removeAttribute('data-wv-inflight');
+            return;
+        }
+
+        const wasPressed = btn.getAttribute('aria-pressed') === 'true';
+        const newPressed = !wasPressed;
+        const url = newPressed ? resolveUrl('add') : resolveUrl('remove');
+
+        const fd = new FormData();
+        fd.append('id', bookId);
+
+        function applyState(pressed) {
+            try {
+                if (pressed) {
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn', 'btn-danger');
+                    btn.setAttribute('aria-pressed', 'true');
+                } else {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-danger');
+                    btn.setAttribute('aria-pressed', 'false');
+                }
+
+                const img = btn.querySelector('img');
+                if (img) {
+                    const iconOn = btn.getAttribute('data-icon-on') || (btn.dataset && btn.dataset.iconOn) || null;
+                    const iconOff = btn.getAttribute('data-icon-off') || (btn.dataset && btn.dataset.iconOff) || null;
+                    try {
+                        const src = img.getAttribute('src') || '';
+                        if (pressed) {
+                            if (iconOn) img.setAttribute('src', iconOn);
+                            else if (src.indexOf('wishlistIconRed-outlineWhite') === -1) {
+                                img.setAttribute('src', src.replace('wishlistIconWhite', 'wishlistIconRed-outlineWhite'));
+                            }
+                        } else {
+                            if (iconOff) img.setAttribute('src', iconOff);
+                            else if (src.indexOf('wishlistIconRed') !== -1) {
+                                img.setAttribute('src', src.replace('wishlistIconRed-outlineWhite', 'wishlistIconWhite'));
+                            }
+                        }
+                    } catch (e) { /* ignore image swap errors */ }
+                }
+            } catch (e) { /* ignore UI set errors */ }
+        }
+
+        applyState(newPressed);
+
+        // toast dedupe
+        try {
+            window.__wv_last_wishlist_toast = window.__wv_last_wishlist_toast || {};
+            const lastToast = window.__wv_last_wishlist_toast[bookId] || null;
+            const nowt = Date.now();
+            const thisType = newPressed ? 'added' : 'removed';
+            if (!lastToast || (nowt - lastToast.t > 800) || lastToast.type === thisType) {
+                showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu');
+                window.__wv_last_wishlist_toast[bookId] = { type: thisType, t: nowt };
+            }
+        } catch (e) {
+            showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu');
+        }
+
+        try { btn.blur(); } catch (e) {}
 
         postForm(url, fd)
             .then(function (data) {
                 if (data && data.success === false) throw new Error(data.message || 'Action failed');
-                onSuccess && onSuccess(id, data);
+
+                if (data && data.item && data.item.id) {
+                    const resolved = String(data.item.id);
+                    btn.setAttribute('data-book-id', resolved);
+                    const form = btn.closest('form');
+                    if (form) {
+                        const input = form.querySelector('input[name="id"]');
+                        if (input) input.value = resolved;
+                    }
+                }
+
+                if (data && typeof data.inWishlist !== 'undefined') {
+                    applyState(!!data.inWishlist);
+                }
             })
             .catch(function (err) {
                 console.error(err);
-                try { alert('Action failed. Please try again.'); } catch (e) { /* ignore */ }
+                applyState(wasPressed);
+                try { showTransientToast('Neúspech pri wishlist operácii'); } catch (e) {}
+            })
+            .finally(function () {
+                try { btn.blur(); } catch (e) {}
+                try { btn.removeAttribute('data-wv-inflight'); } catch (e) {}
+                setTimeout(function () { try { btn.removeAttribute('data-wv-inflight'); } catch (e) {} }, 3000);
             });
     }
 
-    // handleHeartClick
-    // Purpose: Toggle wishlist "heart" button optimistically and call server to persist.
-    // - Updates classes and aria-pressed immediately, sends POST via postForm, and reverts UI on error.
-    // Input: click event on button with data-book-id
-    // Used: bound via delegated listener below.
-    function handleHeartClick(e) {
-        try {
-            // Determine the button element robustly (support delegation)
-            var btn = (e && e.currentTarget && e.currentTarget.matches && e.currentTarget.matches('.btn-wishlist')) ? e.currentTarget : (e && e.target && e.target.closest ? e.target.closest('.btn-wishlist') : null);
-            if (!btn) return;
-
-            // Prevent duplicate activations (pointerdown + click) on the same button within short time
-            try {
-                // If another request for this button is in-flight, ignore
-                if (btn.getAttribute('data-wv-inflight') === '1') return;
-                btn.setAttribute('data-wv-inflight', '1');
-
-                var last = parseInt(btn.getAttribute('data-wv-last') || '0', 10) || 0;
-                var now = Date.now();
-                if (now - last < 700) {
-                    // ignore duplicate
-                    btn.removeAttribute('data-wv-inflight');
-                    return;
-                }
-                btn.setAttribute('data-wv-last', String(now));
-            } catch (e) { /* ignore */ }
-
-            // Prevent further handlers and default submission
-            if (e && typeof e.preventDefault === 'function') e.preventDefault();
-            try { if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); } catch (x) {}
-            try { if (typeof e.stopPropagation === 'function') e.stopPropagation(); } catch (x) {}
-
-            var bookId = btn.getAttribute('data-book-id');
-            // DEBUG: log that handler was reached
-            try { console.debug && console.debug('wishlist: click handler reached', { bookId: bookId, btn: btn }); } catch (e) {}
-            if (!bookId) return;
-
-            // Determine whether this click is an add (newPressed true) or remove (newPressed false)
-            var wasPressed = (btn.getAttribute('aria-pressed') === 'true');
-            var newPressed = !wasPressed;
-
-            // Choose endpoint based on desired state (add vs remove). Keep existing global fallbacks.
-            var addUrl = window.WISHLIST_ADD_URL || (document.body && document.body.dataset && document.body.dataset.wishlistAddUrl) || '/wishlist/add';
-            var removeUrl = window.WISHLIST_REMOVE_URL || (document.body && document.body.dataset && document.body.dataset.wishlistRemoveUrl) || '/wishlist/remove';
-            var url = newPressed ? addUrl : removeUrl;
-
-            var fd = new FormData();
-            fd.append('id', bookId);
-
-            // Optimistic UI: toggle visual state immediately
-            // (wasPressed/newPressed already computed above)
-            function applyState(pressed) {
-                try {
-                    // update classes
-                    if (pressed) {
-                        btn.classList.remove('btn-outline-danger');
-                        btn.classList.add('btn', 'btn-danger');
-                        btn.setAttribute('aria-pressed', 'true');
-                    } else {
-                        btn.classList.remove('btn-danger');
-                        btn.classList.add('btn', 'btn-outline-danger');
-                        btn.setAttribute('aria-pressed', 'false');
-                    }
-
-                    // swap image by filename to avoid relying on absolute/public paths
-                    var img = btn.querySelector('img');
-                    if (img) {
-                        try {
-                            var iconOn = btn.getAttribute('data-icon-on') || (btn.dataset && btn.dataset.iconOn) || null;
-                            var iconOff = btn.getAttribute('data-icon-off') || (btn.dataset && btn.dataset.iconOff) || null;
-                            if (pressed) {
-                                if (iconOn) img.setAttribute('src', iconOn);
-                                else if (img.getAttribute('src').indexOf('wishlistIconRed-outlineWhite') === -1) {
-                                    img.setAttribute('src', img.getAttribute('src').replace('wishlistIconWhite', 'wishlistIconRed-outlineWhite'));
-                                }
-                            } else {
-                                if (iconOff) img.setAttribute('src', iconOff);
-                                else if (img.getAttribute('src').indexOf('wishlistIconRed') !== -1) {
-                                    img.setAttribute('src', img.getAttribute('src').replace('wishlistIconRed-outlineWhite', 'wishlistIconWhite'));
-                                }
-                            }
-                        } catch (e) { /* ignore image swap errors */ }
-                    }
-                } catch (e) { /* ignore UI set errors */ }
-            }
-
-            // Apply optimistic state
-            applyState(newPressed);
-            // Show small confirmation for add, unobtrusive
-            try {
-                // toast dedupe: prevent immediate opposite toast for same book
-                var lastToast = (window.__wv_last_wishlist_toast && window.__wv_last_wishlist_toast[bookId]) || null;
-                var nowt = Date.now();
-                var thisType = newPressed ? 'added' : 'removed';
-                if (!lastToast || (nowt - lastToast.t > 800) || lastToast.type === thisType) {
-                    showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu');
-                    // store last toast info
-                    window.__wv_last_wishlist_toast = window.__wv_last_wishlist_toast || {};
-                    window.__wv_last_wishlist_toast[bookId] = { type: thisType, t: nowt };
-                } else {
-                    // suppress the opposite toast that happens too soon
-                    try { console.debug && console.debug('wishlist: suppressed duplicate toast', { bookId: bookId, lastToast: lastToast, thisType: thisType }); } catch (e) {}
-                }
-            } catch (e) {
-                try { showTransientToast(newPressed ? 'Pridané do wishlistu' : 'Odstránené z wishlistu'); } catch (ee) {}
-            }
-
-            // Immediately blur to avoid sticky :focus styles after click.
-            try { btn.blur(); } catch (e) {}
-
-            postForm(url, fd)
-                .then(function (data) {
-                    if (data && data.success === false) throw new Error(data.message || 'Action failed');
-
-                    // If server returned resolved item, update button/form to use numeric DB id
-                    if (data && data.item && data.item.id) {
-                        var resolved = String(data.item.id);
-                        btn.setAttribute('data-book-id', resolved);
-                        var form = btn.closest('form');
-                        if (form) {
-                            var input = form.querySelector('input[name="id"]');
-                            if (input) input.value = resolved;
-                        }
-                    }
-
-                    // Optionally, server can return authoritative state; if so, ensure UI matches it
-                    if (data && typeof data.inWishlist !== 'undefined') {
-                        applyState(!!data.inWishlist);
-                    }
-                })
-                .catch(function (err) {
-                    console.error(err);
-                    // Revert optimistic UI on error
-                    applyState(wasPressed);
-                    try { showTransientToast('Neúspech pri wishlist operácii'); } catch (e) {}
-                })
-                .finally(function(){ try { btn.blur(); } catch (e) {}
-                    try { btn.removeAttribute('data-wv-inflight'); } catch (e) {}
-                    // safety: clear inflight after 3s in case finally wasn't reached
-                    setTimeout(function(){ try { btn.removeAttribute('data-wv-inflight'); } catch (e) {} }, 3000);
-                });
-        } catch (err) {
-            console.error(err);
-        }
+    // Update displayed ranks
+    function updateRanks(container) {
+        const rows = container.querySelectorAll('.wishlist-row');
+        rows.forEach((row, idx) => {
+            const rankEl = row.querySelector('.wishlist-rank');
+            if (rankEl) rankEl.textContent = (idx + 1) + '.';
+        });
     }
 
-    // enableDragToReorder
-    // Purpose: Add drag & drop support to a wishlist container so users can reorder rows.
-    // - Attaches dragstart/dragover/dragend handlers to child .wishlist-row elements.
-    // - On drag end it calls sendOrderToServer to persist the new order.
-    // Input: container DOM element, reorderUrl string
-    // Used: called in DOMContentLoaded block when wishlist grid exists.
+    // Send order to server
+    function sendOrderToServer(container, reorderUrl) {
+        const rows = container.querySelectorAll('.wishlist-row');
+        const order = Array.prototype.map.call(rows, r => r.dataset.id);
+
+        container.classList.add('saving');
+
+        return postJson(reorderUrl, { order })
+            .then((data) => {
+                if (data && data.success === false) throw new Error(data.message || 'Reorder failed');
+
+                if (data && Array.isArray(data.order)) {
+                    const byId = {};
+                    Array.prototype.slice.call(container.querySelectorAll('.wishlist-row')).forEach(r => byId[r.dataset.id] = r);
+                    while (container.firstChild) container.removeChild(container.firstChild);
+                    data.order.forEach(id => { if (byId[id]) container.appendChild(byId[id]); });
+                    updateRanks(container);
+                } else {
+                    updateRanks(container);
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                try { alert('Nepodarilo sa uložiť poradie. Skúste to znova.'); } catch (e) {}
+            })
+            .finally(() => {
+                container.classList.remove('saving');
+            });
+    }
+
+    // Drag & drop
     function enableDragToReorder(container, reorderUrl) {
         if (!container || !reorderUrl) return;
-        var dragSrcEl = null;
+        let dragSrcEl = null;
 
-        // handleDragStart
-        // Purpose: Store the element being dragged, add dragging class, set dataTransfer.
-        // Used by browser drag lifecycle.
         function handleDragStart(e) {
             this.classList.add('dragging');
             dragSrcEl = this;
             e.dataTransfer.effectAllowed = 'move';
-            try { e.dataTransfer.setData('text/plain', this.dataset.id); } catch (err) { /* IE fallback ignore */ }
+            try { e.dataTransfer.setData('text/plain', this.dataset.id); } catch (err) {}
         }
 
-        // handleDragOver
-        // Purpose: Manage DOM reorder as the dragged item moves over targets.
-        // - Inserts dragged element before/after target based on mouse Y position.
-        // - Calls updateRanks to refresh display order numbers.
-        // Used by browser drag lifecycle.
         function handleDragOver(e) {
-            if (e.preventDefault) e.preventDefault(); // Allows drop
+            if (e.preventDefault) e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            var target = e.currentTarget;
-            var bounding = target.getBoundingClientRect();
-            var offset = bounding.y + (bounding.height / 2);
-            var after = (e.clientY > offset);
-            var parent = target.parentNode;
+            const target = e.currentTarget;
+            const rect = target.getBoundingClientRect();
+            const after = e.clientY > rect.top + rect.height / 2;
+            const parent = target.parentNode;
             if (after) {
                 if (target.nextSibling !== dragSrcEl) parent.insertBefore(dragSrcEl, target.nextSibling);
             } else {
@@ -305,18 +279,11 @@
             return false;
         }
 
-        // handleDragEnd
-        // Purpose: Clean up dragging class and trigger server update of order.
-        // Used by browser drag lifecycle.
         function handleDragEnd() {
             this.classList.remove('dragging');
-            // After drag end, push order to server
             sendOrderToServer(container, reorderUrl);
         }
 
-        // addDnDHandlers
-        // Purpose: Attach drag event listeners to a single item.
-        // Used by enableDragToReorder to initialize existing rows.
         function addDnDHandlers(item) {
             item.setAttribute('draggable', 'true');
             item.addEventListener('dragstart', handleDragStart, false);
@@ -324,100 +291,40 @@
             item.addEventListener('dragend', handleDragEnd, false);
         }
 
-        // Attach handlers to child items
-        var items = Array.prototype.slice.call(container.querySelectorAll('.wishlist-row'));
-        items.forEach(function (it) { addDnDHandlers(it); });
+        Array.prototype.slice.call(container.querySelectorAll('.wishlist-row')).forEach(addDnDHandlers);
     }
 
-    // updateRanks
-    // Purpose: Update displayed rank numbers (1., 2., ...) inside .wishlist-row elements.
-    // Input: container DOM element
-    // Used: called after reorder operations and on initial load to display indices.
-    function updateRanks(container) {
-        var rows = container.querySelectorAll('.wishlist-row');
-        rows.forEach(function (row, idx) {
-            var rankEl = row.querySelector('.wishlist-rank');
-            if (rankEl) rankEl.textContent = (idx + 1) + '.';
-        });
-    }
-
-    // sendOrderToServer
-    // Purpose: Collect current row order and POST to server via postJson.
-    // - Shows a saving state on the container while the request is in-flight.
-    // - On success, optionally reorders DOM to server-authoritative order.
-    // Input: container DOM element, reorderUrl string
-    // Used: called by handleDragEnd inside enableDragToReorder.
-    function sendOrderToServer(container, reorderUrl) {
-        var rows = container.querySelectorAll('.wishlist-row');
-        var order = [];
-        rows.forEach(function (row) { order.push(row.dataset.id); });
-
-        // optimistic UI: show saving state
-        container.classList.add('saving');
-
-        return postJson(reorderUrl, { order: order })
-            .then(function (data) {
-                if (data && data.success === false) throw new Error(data.message || 'Reorder failed');
-                // success: update ranks (server returns authoritative order too)
-                if (data && Array.isArray(data.order)) {
-                    // reorder DOM to match server order if different
-                    var byId = {};
-                    var current = Array.prototype.slice.call(container.querySelectorAll('.wishlist-row'));
-                    current.forEach(function (r) { byId[r.dataset.id] = r; });
-                    // clear
-                    while (container.firstChild) container.removeChild(container.firstChild);
-                    data.order.forEach(function (id) { if (byId[id]) container.appendChild(byId[id]); });
-                    updateRanks(container);
-                }
-            })
-            .catch(function (err) {
-                console.error(err);
-                try { alert('Nepodarilo sa uložiť poradie. Skúste to znova.'); } catch (e) {}
-            })
-            .finally(function () {
-                container.classList.remove('saving');
-            });
-    }
-
-    // DOM-level delegated click binding (attach immediately so timing isn't an issue)
+    // Delegated click handler
     if (!window.__wv_wishlist_click_bound) {
         window.__wv_wishlist_click_bound = true;
         document.addEventListener('click', function (e) {
-            try {
-                var target = e.target || null;
-                var btn = target && target.closest ? target.closest('.btn-wishlist') : null;
-                if (!btn) return;
-                handleHeartClick(e);
-            } catch (ex) { console.error(ex); }
+            const btn = e.target && e.target.closest ? e.target.closest('.btn-wishlist') : null;
+            if (!btn) return;
+            handleHeartClick(e);
         }, true);
     }
 
-    // DOMContentLoaded: wire up drag & drop
     document.addEventListener('DOMContentLoaded', function () {
-
-        // Enable drag & drop on wishlist rows if present
-        var wishlistGrid = document.getElementById('wishlist-grid');
-        // Prefer explicit data attribute on the grid, then global, then body dataset, then default
-        var reorderUrl = null;
-        try {
-            if (wishlistGrid && wishlistGrid.dataset && wishlistGrid.dataset.wishlistReorderUrl) {
-                reorderUrl = wishlistGrid.dataset.wishlistReorderUrl;
-                // expose global for other scripts if not set
-                if (!window.WISHLIST_REORDER_URL) window.WISHLIST_REORDER_URL = reorderUrl;
-            }
-        } catch (e) { /* ignore */ }
-        if (!reorderUrl) {
-            reorderUrl = window.WISHLIST_REORDER_URL || (document.body && document.body.dataset && document.body.dataset.wishlistReorderUrl) || '/wishlist/reorder';
-        }
+        const wishlistGrid = document.getElementById('wishlist-grid');
+        const reorderUrl = resolveUrl('reorder', wishlistGrid);
         if (wishlistGrid) {
             enableDragToReorder(wishlistGrid, reorderUrl);
             updateRanks(wishlistGrid);
         }
 
-        // Wire up remove/move form handlers
+        // wire up remove forms (uses external handleAction if present)
         try {
-            var removeForms = document.querySelectorAll('#wishlist-grid form[action$="Wishlist.remove"]');
-            removeForms.forEach(function (f) { f.addEventListener('submit', function (e) { handleAction(e, f.action, function (id) { var row = document.querySelector('.wishlist-row[data-id="' + id + '"]'); if (row) row.parentNode.removeChild(row); }); }); });
+            const removeForms = document.querySelectorAll('#wishlist-grid form[action$="Wishlist.remove"]');
+            removeForms.forEach(f => {
+                f.addEventListener('submit', function (e) {
+                    if (typeof handleAction === 'function') {
+                        handleAction(e, f.action, function (id) {
+                            const row = document.querySelector('.wishlist-row[data-id="' + id + '"]');
+                            if (row) row.parentNode.removeChild(row);
+                        });
+                    }
+                });
+            });
         } catch (e) { /* ignore */ }
     });
 })();
